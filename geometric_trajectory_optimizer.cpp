@@ -40,7 +40,7 @@ vector<double> GeometricTrajectoryOptimizer::angle_profile(const vector<vector<d
     pts.insert(pts.begin(), pts.back());
     pts.push_back(pts.at(1));
     for(int i = 1; i < alphas.size() + 1; i++)
-        output.at(i) = get_angle(pts.at(i-1), pts.at(i), pts.at(i+1));
+        output.at(i-1) = get_angle(pts.at(i-1), pts.at(i), pts.at(i+1));
     return output;
 }
 vector<double> GeometricTrajectoryOptimizer::distance_profile(const vector<vector<double>>& base, const vector<double>& alphas)
@@ -59,6 +59,24 @@ vector<double> GeometricTrajectoryOptimizer::distance_profile(const vector<vecto
     pts.push_back(pts.front());
     for(int i = 0; i< alphas.size(); i++)
         output.at(i) = distance(pts.at(i), pts.at(i+1));
+    return output;
+}
+vector<double> GeometricTrajectoryOptimizer::distance2_profile(const vector<vector<double>>& base, const vector<double>& alphas)
+{
+    auto pts = get_points(base, alphas);
+    vector<double> output(alphas.size(), 0.0);
+    if(base.front() != base.back())
+    {
+        // open track
+        output.back() = nan("");
+        for(int i = 0; i < alphas.size() -1; i++)
+            output.at(i) = pow(pts.at(i).x-pts.at(i+1).x,2) + pow(pts.at(i).y - pts.at(i+1).y,2); //distance(pts.at(i), pts.at(i+1));
+        return output;
+    }
+    //closed track
+    pts.push_back(pts.front());
+    for(int i = 0; i< alphas.size(); i++)
+        output.at(i) = pow(pts.at(i).x-pts.at(i+1).x,2) + pow(pts.at(i).y - pts.at(i+1).y,2);
     return output;
 }
 vector<double> GeometricTrajectoryOptimizer::curvature_profile(const vector<vector<double>>& base, const vector<double>& alphas)
@@ -334,14 +352,36 @@ double k2_objective_function(const std::vector<double> &x, std::vector<double> &
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
+double l2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+{
+    auto base = static_cast<vector<std::vector<double>>*>(f_data);
+    auto l2_prof = GeometricTrajectoryOptimizer::distance2_profile(*base, x);
+    double output = 0;
+    for (auto l2:l2_prof)
+        if(!isnan(l2))
+            output += l2;
+    cout << "Objective function called! F_val: " << output << endl;
+    return output;
+}
+double l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+{
+    auto base = static_cast<vector<std::vector<double>>*>(f_data);
+    auto l_prof = GeometricTrajectoryOptimizer::distance_profile(*base, x);
+    double output = 0;
+    for (auto l:l_prof)
+        if(!isnan(l))
+            output += l;
+    cout << "Objective function called! F_val: " << output << endl;
+    return output;
+}
 vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& innerCones, const vector<Point>& outerCones, vector<vector<double>>& base)
 {
     //https://nlopt.readthedocs.io/en/latest/NLopt_Reference/
     base = GeometricTrajectoryOptimizer::parametrize(innerCones,outerCones, 100);
-    // base.push_back(base.at(0));
     vector<double> alphas(base.size(), 0.0);
+    base.push_back(base.at(0));
     nlopt::opt opt(nlopt::LN_BOBYQA, alphas.size());
-    opt.set_min_objective(k2_objective_function, static_cast<void*>(&base));
+    opt.set_min_objective(l_objective_function, static_cast<void*>(&base));
 
     opt.set_lower_bounds(0.0);
     opt.set_upper_bounds(1.0);

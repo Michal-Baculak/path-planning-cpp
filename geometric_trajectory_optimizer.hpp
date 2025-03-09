@@ -19,6 +19,7 @@ class GeometricTrajectoryOptimizer
         static std::vector<std::vector<double>> parametrize(const std::vector<Point>& innerCones, const std::vector<Point>& outerCones, int resolution);
         static vector<double> angle_profile(const vector<vector<double>>& base, const vector<double>& alphas);
         static vector<double> distance_profile(const vector<vector<double>>& base, const vector<double>& alphas);
+        static vector<double> distance2_profile(const vector<vector<double>>& base, const vector<double>& alphas);
         static vector<double> curvature_profile(const vector<vector<double>>& base, const vector<double>& alphas);
         static vector<double> curvature2_profile(const vector<vector<double>>& base, const vector<double>& alphas);
 
