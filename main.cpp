@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <fstream>
+#include <chrono>
 
 using namespace std;
 int main()
@@ -90,8 +91,12 @@ int main()
     // GeometricTrajectoryOptimizer::plot_demo({1,2,3,4,5}, {1,4,9,16,25});
     // GeometricTrajectoryOptimizer::plot_all(innerCones,outerCones,base,alphas);
     base.push_back(base.at(0));
-    auto grad_w = GeometricTrajectoryOptimizer::grad_w_k2_l(base, alphas, 0.5); 
+    auto grad_w = GeometricTrajectoryOptimizer::grad_w_k2_l(base, alphas, 0.5);
+    auto start = std::chrono::high_resolution_clock::now(); 
     alphas = GeometricTrajectoryOptimizer::optimize(innerCones, outerCones, base);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    cout << "Optimization time in us: " << duration.count() << "us\n";
     GeometricTrajectoryOptimizer::plot_all(innerCones,outerCones,base,alphas);
     ofstream alphasFile("alphas.txt");
     if(!alphasFile.is_open())

@@ -479,6 +479,28 @@ vector<double> GeometricTrajectoryOptimizer::grad_w_k2_l(const vector<vector<dou
     return grad;    
 }
 
+vector<double> GeometricTrajectoryOptimizer::grad_w_k2_l2(const vector<vector<double>> &base, const vector<double> &alphas, double w)
+{
+    //w = 0 -> optimize based on length2
+    //w = 1 -> optimize based on k2 
+    vector<double> grad(alphas.size(), 0.0);
+    if(base.front() != base.back())
+    {
+        return grad;
+        cerr << "Open track gradient calculation is not yet supported!" << endl;
+    }
+    auto g_k2 = grad_k2(base, alphas);
+    auto g_l2 = grad_l2(base, alphas);
+
+    const vector<double> alpha_ref(alphas.size(),0.5); 
+    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(base, alpha_ref));
+    auto l2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2_profile(base, alpha_ref));
+
+    for (size_t i = 0; i < alphas.size(); i++)
+        grad.at(i) = w*g_k2.at(i)/k2_ref + (1-w)*g_l2.at(i)/l2_ref;
+    return grad; 
+}
+
 double k2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto base = static_cast<vector<std::vector<double>>*>(f_data);
@@ -553,17 +575,16 @@ double w_k2_l_objective_function(const std::vector<double> &x, std::vector<doubl
     //w = 0 -> optimize based on length
     //w = 1 -> optimize based on k2 
     const double w = 0.5; //will preferably once become argument, not just hardcoded like this
+    const vector<double> alpha_ref(x.size(),0.5); 
     auto base = static_cast<vector<std::vector<double>>*>(f_data);
-    auto k2_prof = GeometricTrajectoryOptimizer::curvature2_profile(*base, x);
-    auto l_prof = GeometricTrajectoryOptimizer::distance_profile(*base, x);
-    double sum_k2 = 0, sum_l = 0, output = 0;
-    for (auto k2:k2_prof)
-        if(!isnan(k2))
-            sum_k2 += k2;
-    for (auto l:l_prof)
-        if(!isnan(l))
-            sum_l += l;
-    output = w*sum_k2 + (1-w)*sum_l;
+
+    auto k2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(*base, x));
+    auto l = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance_profile(*base, x));
+
+    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(*base, alpha_ref));
+    auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance_profile(*base, alpha_ref));
+    string skibidi = "toilet"; //prod by Jakub Maslen
+    double output = w*k2/k2_ref + (1-w)*l/l_ref;
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
@@ -586,6 +607,24 @@ double w_k2_l_grad_objective_function(const std::vector<double> &x, std::vector<
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
+double w_k2_l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+{
+    //w = 0 -> optimize based on length
+    //w = 1 -> optimize based on k2 
+    const double w = 0.75; //will preferably once become argument, not just hardcoded like this
+    const vector<double> alpha_ref(x.size(),0.5); 
+    auto base = static_cast<vector<std::vector<double>>*>(f_data);
+    grad = GeometricTrajectoryOptimizer::grad_w_k2_l2(*base, x, w);
+
+    auto k2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(*base, x));
+    auto l2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2_profile(*base, x));
+
+    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(*base, alpha_ref));
+    auto l2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2_profile(*base, alpha_ref));
+    double output = w*k2/k2_ref + (1-w)*l2/l2_ref;
+    cout << "Objective function called! F_val: " << output << endl;
+    return output;
+}
 vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& innerCones, const vector<Point>& outerCones, vector<vector<double>>& base)
 {
     //https://nlopt.readthedocs.io/en/latest/NLopt_Reference/
@@ -597,7 +636,7 @@ vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& inner
     base.push_back(base.at(0));
     // nlopt::opt opt(nlopt::LN_BOBYQA, alphas.size());
     nlopt::opt opt(nlopt::LD_SLSQP, alphas.size());
-    
+
      //LN_BOBYQA - perfect for gradient-free optimization
      //LD_TNEWTON - perfect for l and l2, lacks in k2
      //LD_SLSQP - okay for l and l2, perfect for k2
@@ -612,6 +651,9 @@ vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& inner
     // cout << "setting minimum tolerances: " << numeric_limits<double>::min() << endl;
     opt.set_xtol_rel(1e-9);
     opt.set_xtol_abs(1e-12);
+
+    //much shorter than needed on purpose
+    // opt.set_maxtime(0.2);
 
     // opt.set_ftol_abs(1e-24);
     // opt.set_ftol_rel(1e-18);
