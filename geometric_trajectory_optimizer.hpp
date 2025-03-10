@@ -4,6 +4,7 @@
 #include <limits>
 #include <Python.h>
 #include <nlopt.hpp>
+#include <bits/stdc++.h>
 
 using namespace std;
 struct Point
@@ -22,6 +23,16 @@ class GeometricTrajectoryOptimizer
         static vector<double> distance2_profile(const vector<vector<double>>& base, const vector<double>& alphas);
         static vector<double> curvature_profile(const vector<vector<double>>& base, const vector<double>& alphas);
         static vector<double> curvature2_profile(const vector<vector<double>>& base, const vector<double>& alphas);
+
+        // template <typename T> static T sumVector(const std::vector<T>& vec); //overkill
+        static double sum(const std::vector<double>& vec);
+
+        static vector<double> grad_k2(const vector<vector<double>>& base, const vector<double>& alphas);
+        static vector<double> grad_l(const vector<vector<double>>& base, const vector<double>& alphas);
+        static vector<double> grad_l2(const vector<vector<double>>& base, const vector<double>& alphas);
+        static vector<double> grad_w_k2_l(const vector<vector<double>>& base, const vector<double>& alphas, double w);
+        static vector<double> grad_w_k2_l2(const vector<vector<double>>& base, const vector<double>& alphas, double w);
+
 
         static vector<Point> get_points(const vector<vector<double>>& base, const vector<double>& alphas);
         static double get_angle(const Point& A, const Point& B, const Point& C);

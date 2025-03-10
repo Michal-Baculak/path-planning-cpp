@@ -97,7 +97,8 @@ vector<double> GeometricTrajectoryOptimizer::curvature2_profile(const vector<vec
         output.at(i) = pow(angle_prof.at(i)/dist_prof.at(i), 2);
     return output;
 }
-vector<Point> GeometricTrajectoryOptimizer::get_points(const vector<vector<double>>& base, const vector<double>& alphas)
+
+vector<Point> GeometricTrajectoryOptimizer::get_points(const vector<vector<double>> &base, const vector<double> &alphas)
 {
     vector<Point> P;
     for (size_t i = 0; i < alphas.size(); ++i) {
@@ -109,7 +110,6 @@ vector<Point> GeometricTrajectoryOptimizer::get_points(const vector<vector<doubl
         
         P.push_back(newPoint);
     }
-    
     return P;
 }
 
@@ -117,6 +117,21 @@ vector<Point> GeometricTrajectoryOptimizer::get_points(const vector<vector<doubl
 double GeometricTrajectoryOptimizer::distance(const Point& a, const Point& b) {
     return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
 }
+
+// a bit of an overkill isnt it?
+
+// template <typename T> T GeometricTrajectoryOptimizer::sumVector(const std::vector<T>& vec) 
+// {
+//     T sum = 0;
+//     for (const auto& val : vec)
+//     {
+//         if constexpr (is_floating_point<T>::value)
+//             if(isnan(sum))
+//                 continue;;
+//         sum += val;
+//     } 
+//     return sum;
+// }
 
 bool GeometricTrajectoryOptimizer::crossesBetween(const Point& A, const Point& B, const Point& origin, const Point& direction, Point& intersection)
 {
@@ -341,10 +356,145 @@ void GeometricTrajectoryOptimizer::plot_all(
     }
     Py_XDECREF(pModule);
 }
+vector<double> GeometricTrajectoryOptimizer::grad_l2(const vector<vector<double>>& base, const vector<double>& alphas)
+{
+    vector<double> grad(alphas.size(), 0.0);
+    if(base.front() != base.back())
+    {
+        return grad;
+        cerr << "Open track gradient calculation is not yet supported!" << endl;
+    }
+    auto pts = get_points(base, alphas);
+    // add last element to the front and first element to the back
+    pts.insert(pts.begin(), pts.back());
+    pts.push_back(pts.at(1));
+    for (size_t i = 1; i < alphas.size()+1; i++)
+    {
+        double x_im1 = pts.at(i).x - pts.at(i-1).x;
+        double y_im1 = pts.at(i).y - pts.at(i-1).y;
+        double x_i = pts.at(i+1).x - pts.at(i).x;
+        double y_i = pts.at(i+1).y - pts.at(i).y;
+        double x_bi0 = base.at(i-1).at(0); 
+        double y_bi0 = base.at(i-1).at(1);
+        double x_bi1 = base.at(i-1).at(2);
+        double y_bi1 = base.at(i-1).at(3);
+        grad.at(i-1) = 2*(x_bi1-x_bi0)*(x_im1-x_i) + 2*(y_bi1-y_bi0)*(y_im1-y_i);
+    }
+    return grad;
+}
+double GeometricTrajectoryOptimizer::sum(const std::vector<double> &vec)
+{
+    double output = 0;
+    for (auto val:vec)
+        if(!isnan(val))
+            output += val;
+    return output;
+}
+vector<double> GeometricTrajectoryOptimizer::grad_k2(const vector<vector<double>> &base, const vector<double> &alphas)
+{
+    vector<double> grad(alphas.size(), 0.0);
+    if(base.front() != base.back())
+    {
+        return grad;
+        cerr << "Open track gradient calculation is not yet supported!" << endl;
+    }
+    auto pts = get_points(base, alphas);
+    auto angles = angle_profile(base, alphas);
+    // add last element to the front and first element to the back
+    angles.insert(angles.begin(), angles.back());
+    angles.push_back(angles.at(1));
+    pts.insert(pts.begin(), pts.back());
+    pts.push_back(pts.at(1));
+    pts.push_back(pts.at(2));
+    for (size_t i = 1; i < alphas.size()+1; i++)
+    {
+        double x_im1 = pts.at(i).x - pts.at(i-1).x;
+        double y_im1 = pts.at(i).y - pts.at(i-1).y;
+        double x_i = pts.at(i+1).x - pts.at(i).x;
+        double y_i = pts.at(i+1).y - pts.at(i).y;
+        double x_ip1 = pts.at(i+2).x - pts.at(i+1).x;
+        double y_ip1 = pts.at(i+2).y - pts.at(i+1).y;
+        double A = -angles.at(i-1);
+        double B = angles.at(i);
+        double C = base.at(i-1).at(2) - base.at(i-1).at(0); // base is indexed with i - 1, because we did not append last element to the front
+        double D = base.at(i-1).at(3) - base.at(i-1).at(1);
+        double E = x_i*x_i + y_i*y_i;
+        double F = x_im1*x_im1 + y_im1*y_im1;
+        double G = angles.at(i+1);
+        double dkim1_dai =  (2*y_im1*A - A*A*2*x_im1)/(F*F)*C +
+                            (2*x_im1*(-A) - A*A*2*y_im1)*D/(F*F);
+        double dki_dai = ((2*y_i*(-B)*(-C)/E + 2*y_im1*B*C/F + 2*x_i*B*(-D)/E+2*x_im1*(-B)*D/F)*E -
+                            B*B*(2*x_i*(-C) +2*y_i*(-D)))/(E*E);
+        double dkip1_dai = (2*y_i*G*(-C)/E + 2*x_i*(-G)*(-D)/E)/(x_ip1*x_ip1 + y_ip1*y_ip1);
+        grad.at(i-1) = dkim1_dai + dki_dai + dkip1_dai;
+    }
+    return grad;
+}
+vector<double> GeometricTrajectoryOptimizer::grad_l(const vector<vector<double>>& base, const vector<double>& alphas)
+{
+    vector<double> grad(alphas.size(), 0.0);
+    if(base.front() != base.back())
+    {
+        return grad;
+        cerr << "Open track gradient calculation is not yet supported!" << endl;
+    }
+    auto pts = get_points(base, alphas);
+    // add last element to the front and first element to the back
+    pts.insert(pts.begin(), pts.back());
+    pts.push_back(pts.at(1));
+    for (size_t i = 1; i < alphas.size()+1; i++)
+    {
+        double x_im1 = pts.at(i).x - pts.at(i-1).x;
+        double y_im1 = pts.at(i).y - pts.at(i-1).y;
+        double x_i = pts.at(i+1).x - pts.at(i).x;
+        double y_i = pts.at(i+1).y - pts.at(i).y;
+        double x_bi0 = base.at(i-1).at(0); 
+        double y_bi0 = base.at(i-1).at(1);
+        double x_bi1 = base.at(i-1).at(2);
+        double y_bi1 = base.at(i-1).at(3);
+        grad.at(i-1) =  (x_bi1-x_bi0)*(x_im1/sqrt(x_im1*x_im1 + y_im1*y_im1) - x_i/sqrt(x_i*x_i + y_i*y_i)) + 
+                        (y_bi1-y_bi0)*(y_im1/sqrt(x_im1*x_im1 + y_im1*y_im1) - y_i/sqrt(x_i*x_i + y_i*y_i));
+    }
+    return grad;
+}
+vector<double> GeometricTrajectoryOptimizer::grad_w_k2_l(const vector<vector<double>>& base, const vector<double>& alphas, double w)
+{
+    //w = 0 -> optimize based on length
+    //w = 1 -> optimize based on k2 
+    vector<double> grad(alphas.size(), 0.0);
+    if(base.front() != base.back())
+    {
+        return grad;
+        cerr << "Open track gradient calculation is not yet supported!" << endl;
+    }
+    auto g_k2 = grad_k2(base, alphas);
+    auto g_l = grad_l(base, alphas);
+
+    const vector<double> alpha_ref(alphas.size(),0.5); 
+    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(base, alpha_ref));
+    auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance_profile(base, alpha_ref));
+
+    for (size_t i = 0; i < alphas.size(); i++)
+        grad.at(i) = w*g_k2.at(i)/k2_ref + (1-w)*g_l.at(i)/l_ref;
+    return grad;    
+}
+
 double k2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto base = static_cast<vector<std::vector<double>>*>(f_data);
     auto k2_prof = GeometricTrajectoryOptimizer::curvature2_profile(*base, x);
+    double output = 0;
+    for (auto k2:k2_prof)
+        if(!isnan(k2))
+            output += k2;
+    cout << "Objective function called! F_val: " << output << endl;
+    return output;
+}
+double k2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+{
+    auto base = static_cast<vector<std::vector<double>>*>(f_data);
+    auto k2_prof = GeometricTrajectoryOptimizer::curvature2_profile(*base, x);
+    grad = GeometricTrajectoryOptimizer::grad_k2(*base, x);
     double output = 0;
     for (auto k2:k2_prof)
         if(!isnan(k2))
@@ -363,6 +513,18 @@ double l2_objective_function(const std::vector<double> &x, std::vector<double> &
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
+double l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+{
+    auto base = static_cast<vector<std::vector<double>>*>(f_data);
+    auto l2_prof = GeometricTrajectoryOptimizer::distance2_profile(*base, x);
+    grad = GeometricTrajectoryOptimizer::grad_l2(*base, x);
+    double output = 0;
+    for (auto l2:l2_prof)
+        if(!isnan(l2))
+            output += l2;
+    cout << "Objective function called! F_val: " << output << endl;
+    return output;
+}
 double l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto base = static_cast<vector<std::vector<double>>*>(f_data);
@@ -374,14 +536,73 @@ double l_objective_function(const std::vector<double> &x, std::vector<double> &g
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
+double l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+{
+    auto base = static_cast<vector<std::vector<double>>*>(f_data);
+    auto l_prof = GeometricTrajectoryOptimizer::distance_profile(*base, x);
+    grad = GeometricTrajectoryOptimizer::grad_l(*base, x);
+    double output = 0;
+    for (auto l:l_prof)
+        if(!isnan(l))
+            output += l;
+    cout << "Objective function called! F_val: " << output << endl;
+    return output;
+}
+double w_k2_l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+{
+    //w = 0 -> optimize based on length
+    //w = 1 -> optimize based on k2 
+    const double w = 0.5; //will preferably once become argument, not just hardcoded like this
+    auto base = static_cast<vector<std::vector<double>>*>(f_data);
+    auto k2_prof = GeometricTrajectoryOptimizer::curvature2_profile(*base, x);
+    auto l_prof = GeometricTrajectoryOptimizer::distance_profile(*base, x);
+    double sum_k2 = 0, sum_l = 0, output = 0;
+    for (auto k2:k2_prof)
+        if(!isnan(k2))
+            sum_k2 += k2;
+    for (auto l:l_prof)
+        if(!isnan(l))
+            sum_l += l;
+    output = w*sum_k2 + (1-w)*sum_l;
+    cout << "Objective function called! F_val: " << output << endl;
+    return output;
+}
+double w_k2_l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+{
+    //w = 0 -> optimize based on length
+    //w = 1 -> optimize based on k2 
+    const double w = 0.5; //will preferably once become argument, not just hardcoded like this
+    const vector<double> alpha_ref(x.size(),0.5); 
+    auto base = static_cast<vector<std::vector<double>>*>(f_data);
+    grad = GeometricTrajectoryOptimizer::grad_w_k2_l(*base, x, w);
+
+    auto k2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(*base, x));
+    auto l = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance_profile(*base, x));
+
+    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(*base, alpha_ref));
+    auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance_profile(*base, alpha_ref));
+    string skibidi = "toilet"; //prod by Jakub Maslen
+    double output = w*k2/k2_ref + (1-w)*l/l_ref;
+    cout << "Objective function called! F_val: " << output << endl;
+    return output;
+}
 vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& innerCones, const vector<Point>& outerCones, vector<vector<double>>& base)
 {
     //https://nlopt.readthedocs.io/en/latest/NLopt_Reference/
     base = GeometricTrajectoryOptimizer::parametrize(innerCones,outerCones, 100);
-    vector<double> alphas(base.size(), 0.0);
+
+    // some setups have varying results based on initial guess, 1.0 seems to be better for w_k2_l_grad OF (f.e.)
+    vector<double> alphas(base.size(), 1.0);
+
     base.push_back(base.at(0));
-    nlopt::opt opt(nlopt::LN_BOBYQA, alphas.size());
-    opt.set_min_objective(l_objective_function, static_cast<void*>(&base));
+    // nlopt::opt opt(nlopt::LN_BOBYQA, alphas.size());
+    nlopt::opt opt(nlopt::LD_SLSQP, alphas.size());
+    
+     //LN_BOBYQA - perfect for gradient-free optimization
+     //LD_TNEWTON - perfect for l and l2, lacks in k2
+     //LD_SLSQP - okay for l and l2, perfect for k2
+     //LD_LBFGS - perfect for w
+    opt.set_min_objective(w_k2_l_grad_objective_function, static_cast<void*>(&base));
 
     opt.set_lower_bounds(0.0);
     opt.set_upper_bounds(1.0);
@@ -391,6 +612,9 @@ vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& inner
     // cout << "setting minimum tolerances: " << numeric_limits<double>::min() << endl;
     opt.set_xtol_rel(1e-9);
     opt.set_xtol_abs(1e-12);
+
+    // opt.set_ftol_abs(1e-24);
+    // opt.set_ftol_rel(1e-18);
 
     double opt_k2 = 0;
     nlopt::result result = opt.optimize(alphas, opt_k2);

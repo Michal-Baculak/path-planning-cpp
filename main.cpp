@@ -89,9 +89,21 @@ int main()
 
     // GeometricTrajectoryOptimizer::plot_demo({1,2,3,4,5}, {1,4,9,16,25});
     // GeometricTrajectoryOptimizer::plot_all(innerCones,outerCones,base,alphas);
+    base.push_back(base.at(0));
+    auto grad_w = GeometricTrajectoryOptimizer::grad_w_k2_l(base, alphas, 0.5); 
     alphas = GeometricTrajectoryOptimizer::optimize(innerCones, outerCones, base);
     GeometricTrajectoryOptimizer::plot_all(innerCones,outerCones,base,alphas);
+    ofstream alphasFile("alphas.txt");
+    if(!alphasFile.is_open())
+    {
+        cout << "Failed to open the \"alphas.txt\" file!\n";
+        return 42;
+    }
+    for(auto alpha:alphas)
+        alphasFile << alpha << ";\n";
+    alphasFile.close();
     return 42;
+
     // Run optimization
     // Save optimization trajectory in a file
     // invoke plotting function
