@@ -10,6 +10,8 @@ using namespace std;
 struct Point
 {
     double x, y;
+    double norm() const { return std::sqrt(x * x + y * y); }
+    Point normalized() const { double n = norm(); return {x / n, y / n}; }
 };
 class GeometricTrajectoryOptimizer
 {
@@ -18,7 +20,9 @@ class GeometricTrajectoryOptimizer
         static double distance(const Point& a, const Point& b);
         static bool crossesBetween(const Point& A, const Point& B, const Point& origin, const Point& direction, Point& intersection);
         static std::vector<std::vector<double>> parametrize(const std::vector<Point>& innerCones, const std::vector<Point>& outerCones, int resolution);
+        static std::vector<std::vector<double>> parametrize_gradual(std::vector<Point> innerCones,std::vector<Point> outerCones,double ds,bool is_closed);
         static vector<double> angle_profile(const vector<vector<double>>& base, const vector<double>& alphas);
+        static vector<double> angle_profile(const vector<Point>& pts);
         static vector<double> distance_profile(const vector<vector<double>>& base, const vector<double>& alphas);
         static vector<double> distance2_profile(const vector<vector<double>>& base, const vector<double>& alphas);
         static vector<double> curvature_profile(const vector<vector<double>>& base, const vector<double>& alphas);
@@ -44,5 +48,6 @@ class GeometricTrajectoryOptimizer
             const vector<double>& alphas
         );
         static vector<double> optimize(const vector<Point>& innerCones, const vector<Point>& outerCones, vector<vector<double>>& base);
+        static pair<vector<Point>,vector<Point>> safety_margin(const vector<Point>& inner, const vector<Point>& outer, double margin) ;
 
 };

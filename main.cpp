@@ -8,7 +8,17 @@
 using namespace std;
 int main()
 {
-    // Read cone positions from file
+    std::cout << "__cplusplus: " << __cplusplus << std::endl;
+    
+    if (__cplusplus == 199711L) std::cout << "C++98/03" << std::endl;
+    else if (__cplusplus == 201103L) std::cout << "C++11" << std::endl;
+    else if (__cplusplus == 201402L) std::cout << "C++14" << std::endl;
+    else if (__cplusplus == 201703L) std::cout << "C++17" << std::endl;
+    else if (__cplusplus == 202002L) std::cout << "C++20" << std::endl;
+    else if (__cplusplus > 202002L) std::cout << "C++23 or newer" << std::endl;
+    else std::cout << "Unknown C++ version" << std::endl;
+    
+    // Read cone positions from filea
     ifstream trackFile("track.txt");
     string line;
     float x, y;
@@ -33,7 +43,8 @@ int main()
     trackFile.close();
     
     // Parametrize track
-    auto base = GeometricTrajectoryOptimizer::parametrize(innerCones,outerCones, 100);
+    // auto base = GeometricTrajectoryOptimizer::parametrize(innerCones,outerCones, 100);
+    auto base = GeometricTrajectoryOptimizer::parametrize_gradual(innerCones,outerCones, 2, true);
 
     // Save parametrization in a file
     ofstream baseFile("base.txt");
@@ -89,7 +100,7 @@ int main()
     profFile.close();
 
     // GeometricTrajectoryOptimizer::plot_demo({1,2,3,4,5}, {1,4,9,16,25});
-    // GeometricTrajectoryOptimizer::plot_all(innerCones,outerCones,base,alphas);
+    GeometricTrajectoryOptimizer::plot_all(innerCones,outerCones,base,alphas);
     base.push_back(base.at(0));
     auto grad_w = GeometricTrajectoryOptimizer::grad_w_k2_l(base, alphas, 0.5);
     auto start = std::chrono::high_resolution_clock::now(); 

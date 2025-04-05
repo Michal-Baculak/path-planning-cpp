@@ -5,6 +5,24 @@ Point operator-(const Point& a, const Point& b)
 {
     return {a.x - b.x, a.y - b.y};
 }
+Point operator+(const Point& a, const Point& b) 
+{
+    return {a.x + b.x, a.y + b.y};
+}
+Point operator*(const Point& a, const double& scalar) 
+{
+    return {a.x * scalar, a.y * scalar};
+}
+
+bool operator==(const Point& a, const Point& b) 
+{
+    return (a.x == b.x) && (a.y == b.y); 
+}
+bool operator!=(const Point& a, const Point& b) 
+{
+    return (a.x != b.x) || (a.y != b.y); 
+}
+
 vector<double> GeometricTrajectoryOptimizer::velocityProfile(vector<Point> trajectory)
 {
     cout << "velocityProfile unimplemented!";
@@ -41,6 +59,27 @@ vector<double> GeometricTrajectoryOptimizer::angle_profile(const vector<vector<d
     pts.push_back(pts.at(1));
     for(int i = 1; i < alphas.size() + 1; i++)
         output.at(i-1) = get_angle(pts.at(i-1), pts.at(i), pts.at(i+1));
+    return output;
+}
+vector<double> GeometricTrajectoryOptimizer::angle_profile(const vector<Point>& pts)
+{
+    vector<double> output;
+    if(pts.front() != pts.back())
+    {
+        //open track (unconnected)
+        output = vector<double>(pts.size(), 0.0);
+        output.at(0) = output.back() = nan("");
+        for(int i = 1; i < pts.size() - 1; i++)
+            output.at(i) = get_angle(pts.at(i-1), pts.at(i), pts.at(i+1));
+        return output;
+    }
+
+    // closed track
+    auto _pts = pts;
+    output = vector<double>(_pts.size()-1, 0.0);
+    _pts.insert(_pts.begin(), _pts.at(_pts.size()-2));
+    for(int i = 1; i < output.size() + 1; i++)
+        output.at(i-1) = get_angle(_pts.at(i-1), _pts.at(i), _pts.at(i+1));
     return output;
 }
 vector<double> GeometricTrajectoryOptimizer::distance_profile(const vector<vector<double>>& base, const vector<double>& alphas)
@@ -221,6 +260,148 @@ std::vector<std::vector<double>> GeometricTrajectoryOptimizer::parametrize(const
             }
         }
         
+        if (!base.empty()) {
+            Point prev_A = {base.back()[0], base.back()[1]};
+            Point prev_B = {base.back()[2], base.back()[3]};
+            Point temp;
+            if (crossesBetween(prev_A, prev_B, p1, {p2.x-p1.x, p2.y-p1.y}, temp)) {
+                continue;
+            }
+        }
+        
+        base.push_back({p1.x, p1.y, p2.x, p2.y});
+    }
+    return base;
+}
+
+double linearInterp(const std::vector<double>& t, const std::vector<double>& v, double s) 
+{
+    for (size_t i = 0; i < t.size() - 1; ++i) {
+        if (s >= t[i] && s <= t[i + 1]) {
+            double ratio = (s - t[i]) / (t[i + 1] - t[i]);
+            return v[i] + ratio * (v[i + 1] - v[i]);
+        }
+    }
+    return v.back();  //TODO: fallback behaviour should either handle the error case or throw an error
+}
+
+std::vector<std::vector<double>> GeometricTrajectoryOptimizer::parametrize_gradual(
+    std::vector<Point> innerCones,
+    std::vector<Point> outerCones,
+    double ds,
+    bool is_closed
+) {
+    std::vector<std::vector<double>> base;
+
+    std::vector<double> t_orig, origins_x, origins_y;
+    std::vector<double> t_dir, dir_x, dir_y;
+
+    double totalLength = 0.0;
+    std::vector<Point> cones;
+
+    if (is_closed) 
+    {
+        outerCones.push_back(outerCones.front());
+
+        cones.push_back(innerCones.back());
+        cones.insert(cones.end(), innerCones.begin(), innerCones.end());
+        cones.push_back(innerCones.front());
+        cones.push_back(innerCones[1]);
+
+        for (size_t i = 0; i < innerCones.size(); ++i) 
+        {
+            t_orig.push_back(totalLength);
+            origins_x.push_back(cones[i + 1].x);
+            origins_y.push_back(cones[i + 1].y);
+            totalLength += distance(cones[i + 1], cones[i + 2]);
+        }
+
+        t_orig.push_back(totalLength);
+        origins_x.push_back(cones[1].x);
+        origins_y.push_back(cones[1].y);
+
+        double s = 0;
+        for (size_t i = 0; i < innerCones.size() + 2; ++i) 
+        {
+            double dx = cones[i + 1].x - cones[i].x;
+            double dy = cones[i + 1].y - cones[i].y;
+            double dist = distance(cones[i + 1], cones[i]);
+            s += dist;
+
+            t_dir.push_back(s - dist / 2);
+            dir_x.push_back(-dy);
+            dir_y.push_back(dx);
+        }
+        // t_dir[0] -= distance(cones[1], cones[2]); //THIS IS WRONG LOOKIN
+        //This should do the trick
+        double offset = distance(cones[0], cones[1]);
+        for(double& t:t_dir)
+            t -= offset;
+        
+    } 
+    else 
+    {
+        //This part is not unit tested, run tests first before using
+        cones = innerCones;
+        for (size_t i = 0; i < cones.size() - 1; ++i) 
+        {
+            t_orig.push_back(totalLength);
+            origins_x.push_back(cones[i].x);
+            origins_y.push_back(cones[i].y);
+            totalLength += distance(cones[i], cones[i + 1]);
+        }
+        t_orig.push_back(totalLength);
+        origins_x.push_back(cones.back().x);
+        origins_y.push_back(cones.back().y);
+
+        double s = 0;
+        for (size_t i = 0; i < cones.size() - 1; ++i) {
+            double dx = cones[i + 1].x - cones[i].x;
+            double dy = cones[i + 1].y - cones[i].y;
+            double dist = distance(cones[i + 1], cones[i]);
+            s += dist;
+            t_dir.push_back(s - dist / 2);
+            dir_x.push_back(-dy);
+            dir_y.push_back(dx);
+        }
+
+        t_dir.insert(t_dir.begin(), 0);
+        t_dir.push_back(totalLength);
+        dir_x.insert(dir_x.begin(), dir_x.front());
+        dir_x.push_back(dir_x.back());
+        dir_y.insert(dir_y.begin(), dir_y.front());
+        dir_y.push_back(dir_y.back());
+    }
+
+    for (double s = 0; s <= totalLength; s += ds) {
+        double p1_x = linearInterp(t_orig, origins_x, s);
+        double p1_y = linearInterp(t_orig, origins_y, s);
+        double k_x = linearInterp(t_dir, dir_x, s);
+        double k_y = linearInterp(t_dir, dir_y, s);
+
+        Point p1 = {p1_x, p1_y};
+        Point k_n = {k_x, k_y};
+
+        std::vector<Point> intersections;
+        for (size_t j = 0; j < outerCones.size() - 1; ++j) {
+            Point p;
+            if (crossesBetween(outerCones[j], outerCones[j + 1], p1, k_n, p)) {
+                intersections.push_back(p);
+            }
+        }
+
+        if (intersections.empty()) continue;
+
+        Point p2 = intersections.front();
+        double min_dist = distance(p1, p2);
+        for (const auto& p : intersections) {
+            double dst = distance(p1, p);
+            if (dst < min_dist) {
+                min_dist = dst;
+                p2 = p;
+            }
+        }
+
         if (!base.empty()) {
             Point prev_A = {base.back()[0], base.back()[1]};
             Point prev_B = {base.back()[2], base.back()[3]};
@@ -628,7 +809,11 @@ double w_k2_l2_grad_objective_function(const std::vector<double> &x, std::vector
 vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& innerCones, const vector<Point>& outerCones, vector<vector<double>>& base)
 {
     //https://nlopt.readthedocs.io/en/latest/NLopt_Reference/
-    base = GeometricTrajectoryOptimizer::parametrize(innerCones,outerCones, 100);
+
+    auto [inner, outer] = safety_margin(innerCones, outerCones, 1.5);
+    base = GeometricTrajectoryOptimizer::parametrize(inner,outer, 100);
+    // base = GeometricTrajectoryOptimizer::parametrize_gradual(inner,outer, 4, true);
+    // base = GeometricTrajectoryOptimizer::parametrize(innerCones,outerCones, 100);
 
     // some setups have varying results based on initial guess, 1.0 seems to be better for w_k2_l_grad OF (f.e.)
     vector<double> alphas(base.size(), 1.0);
@@ -665,4 +850,65 @@ vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& inner
     else
         cout << "Optimization failed!" << endl;
     return alphas;
+}
+
+Point line_intersect(const Point& A1, const Point& A2, const Point& B1, const Point& B2) {
+    double x1 = A1.x, y1 = A1.y, x2 = A2.x, y2 = A2.y;
+    double x3 = B1.x, y3 = B1.y, x4 = B2.x, y4 = B2.y;
+    
+    double t_n = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4));
+    double t_d = ((x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4));
+    if(t_d == 0)
+    {
+        // paralel or coincident lines, from the use case we know they must be coincident
+        // so we implement use case specific behaviour -> p = (A2+B1)/2
+        return {(A2.x + B1.x)/2, (A2.y + B1.y)/2};
+    }
+    double t = t_n/t_d;
+    return {x1 + t * (x2 - x1), y1 + t * (y2 - y1)};
+}
+
+// Offset points function
+std::vector<Point> offset_points(const Point& A, const Point& B, const Point& C, double offset, double dir) {
+    Point V1 = B - A;
+    Point V2 = C - B;
+    
+    Point N1 = {-dir * V1.y, dir * V1.x};
+    Point N2 = {-dir * V2.y, dir * V2.x};
+    
+    N1 = N1.normalized() * offset;
+    N2 = N2.normalized() * offset;
+    
+    return {A + N1, B + N1, B + N2, C + N2};
+}
+
+// Safety margin function for a single boundary
+vector<Point> safety_margin_oneline(const vector<Point>& in, double margin, double direction) {
+    size_t len = in.size();
+    vector<Point> out;
+    
+    for (size_t i = 0; i < len; ++i) {
+        Point A = in[(i + len - 1) % len];
+        Point B = in[i];
+        Point C = in[(i + 1) % len];
+        
+        auto o_p = offset_points(A, B, C, margin, direction);
+        Point p_new = line_intersect(o_p[0], o_p[1], o_p[2], o_p[3]);
+        out.push_back(p_new);
+    }
+    
+    return out;
+}
+
+// Main safety margin function
+pair<vector<Point>,vector<Point>> GeometricTrajectoryOptimizer::safety_margin
+    (const vector<Point>& inner, const vector<Point>& outer, double margin) 
+{
+    Point A = inner[1] - inner[0];
+    Point B = outer[0] - inner[0];
+    double dir = A.x * B.y - A.y * B.x;
+    
+    vector<Point> innerNew = safety_margin_oneline(inner, margin, dir);
+    vector<Point> outerNew = safety_margin_oneline(outer, margin, -dir);
+    return pair<vector<Point>,vector<Point>>(innerNew, outerNew);
 }
