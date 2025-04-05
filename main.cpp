@@ -100,7 +100,7 @@ int main()
     profFile.close();
 
     // GeometricTrajectoryOptimizer::plot_demo({1,2,3,4,5}, {1,4,9,16,25});
-    GeometricTrajectoryOptimizer::plot_all(innerCones,outerCones,base,alphas);
+    // GeometricTrajectoryOptimizer::plot_all(innerCones,outerCones,base,alphas);
     base.push_back(base.at(0));
     auto grad_w = GeometricTrajectoryOptimizer::grad_w_k2_l(base, alphas, 0.5);
     auto start = std::chrono::high_resolution_clock::now(); 

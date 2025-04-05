@@ -152,26 +152,9 @@ vector<Point> GeometricTrajectoryOptimizer::get_points(const vector<vector<doubl
     return P;
 }
 
-
 double GeometricTrajectoryOptimizer::distance(const Point& a, const Point& b) {
     return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
 }
-
-// a bit of an overkill isnt it?
-
-// template <typename T> T GeometricTrajectoryOptimizer::sumVector(const std::vector<T>& vec) 
-// {
-//     T sum = 0;
-//     for (const auto& val : vec)
-//     {
-//         if constexpr (is_floating_point<T>::value)
-//             if(isnan(sum))
-//                 continue;;
-//         sum += val;
-//     } 
-//     return sum;
-// }
-
 bool GeometricTrajectoryOptimizer::crossesBetween(const Point& A, const Point& B, const Point& origin, const Point& direction, Point& intersection)
 {
     Point D = {origin.x + direction.x, origin.y + direction.y};
@@ -194,7 +177,6 @@ bool GeometricTrajectoryOptimizer::crossesBetween(const Point& A, const Point& B
     }
     return false;
 }
-
 std::vector<std::vector<double>> GeometricTrajectoryOptimizer::parametrize(const std::vector<Point>& innerCones, const std::vector<Point>& outerCones, int resolution) {
     std::vector<double> dist;
     std::vector<std::vector<double>> base;
@@ -273,7 +255,6 @@ std::vector<std::vector<double>> GeometricTrajectoryOptimizer::parametrize(const
     }
     return base;
 }
-
 double linearInterp(const std::vector<double>& t, const std::vector<double>& v, double s) 
 {
     for (size_t i = 0; i < t.size() - 1; ++i) {
@@ -659,7 +640,6 @@ vector<double> GeometricTrajectoryOptimizer::grad_w_k2_l(const vector<vector<dou
         grad.at(i) = w*g_k2.at(i)/k2_ref + (1-w)*g_l.at(i)/l_ref;
     return grad;    
 }
-
 vector<double> GeometricTrajectoryOptimizer::grad_w_k2_l2(const vector<vector<double>> &base, const vector<double> &alphas, double w)
 {
     //w = 0 -> optimize based on length2
@@ -682,7 +662,7 @@ vector<double> GeometricTrajectoryOptimizer::grad_w_k2_l2(const vector<vector<do
     return grad; 
 }
 
-double k2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::k2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto base = static_cast<vector<std::vector<double>>*>(f_data);
     auto k2_prof = GeometricTrajectoryOptimizer::curvature2_profile(*base, x);
@@ -693,7 +673,7 @@ double k2_objective_function(const std::vector<double> &x, std::vector<double> &
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
-double k2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::k2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto base = static_cast<vector<std::vector<double>>*>(f_data);
     auto k2_prof = GeometricTrajectoryOptimizer::curvature2_profile(*base, x);
@@ -705,7 +685,7 @@ double k2_grad_objective_function(const std::vector<double> &x, std::vector<doub
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
-double l2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::l2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto base = static_cast<vector<std::vector<double>>*>(f_data);
     auto l2_prof = GeometricTrajectoryOptimizer::distance2_profile(*base, x);
@@ -716,7 +696,7 @@ double l2_objective_function(const std::vector<double> &x, std::vector<double> &
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
-double l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto base = static_cast<vector<std::vector<double>>*>(f_data);
     auto l2_prof = GeometricTrajectoryOptimizer::distance2_profile(*base, x);
@@ -728,7 +708,7 @@ double l2_grad_objective_function(const std::vector<double> &x, std::vector<doub
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
-double l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto base = static_cast<vector<std::vector<double>>*>(f_data);
     auto l_prof = GeometricTrajectoryOptimizer::distance_profile(*base, x);
@@ -739,7 +719,7 @@ double l_objective_function(const std::vector<double> &x, std::vector<double> &g
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
-double l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto base = static_cast<vector<std::vector<double>>*>(f_data);
     auto l_prof = GeometricTrajectoryOptimizer::distance_profile(*base, x);
@@ -751,7 +731,7 @@ double l_grad_objective_function(const std::vector<double> &x, std::vector<doubl
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
-double w_k2_l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::w_k2_l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     //w = 0 -> optimize based on length
     //w = 1 -> optimize based on k2 
@@ -769,7 +749,7 @@ double w_k2_l_objective_function(const std::vector<double> &x, std::vector<doubl
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
-double w_k2_l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::w_k2_l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     //w = 0 -> optimize based on length
     //w = 1 -> optimize based on k2 
@@ -788,7 +768,7 @@ double w_k2_l_grad_objective_function(const std::vector<double> &x, std::vector<
     cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
-double w_k2_l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::w_k2_l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     //w = 0 -> optimize based on length
     //w = 1 -> optimize based on k2 
@@ -811,8 +791,8 @@ vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& inner
     //https://nlopt.readthedocs.io/en/latest/NLopt_Reference/
 
     auto [inner, outer] = safety_margin(innerCones, outerCones, 1.5);
-    base = GeometricTrajectoryOptimizer::parametrize(inner,outer, 100);
-    // base = GeometricTrajectoryOptimizer::parametrize_gradual(inner,outer, 4, true);
+    // base = GeometricTrajectoryOptimizer::parametrize(inner,outer, 100);
+    base = GeometricTrajectoryOptimizer::parametrize_gradual(inner,outer, 3, true);
     // base = GeometricTrajectoryOptimizer::parametrize(innerCones,outerCones, 100);
 
     // some setups have varying results based on initial guess, 1.0 seems to be better for w_k2_l_grad OF (f.e.)

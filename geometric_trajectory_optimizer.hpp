@@ -37,7 +37,15 @@ class GeometricTrajectoryOptimizer
         static vector<double> grad_w_k2_l(const vector<vector<double>>& base, const vector<double>& alphas, double w);
         static vector<double> grad_w_k2_l2(const vector<vector<double>>& base, const vector<double>& alphas, double w);
 
-
+        static double k2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double k2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double l2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double w_k2_l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double w_k2_l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double w_k2_l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
         static vector<Point> get_points(const vector<vector<double>>& base, const vector<double>& alphas);
         static double get_angle(const Point& A, const Point& B, const Point& C);
         static void plot_demo(const vector<double>& x, const vector<double>& y);
