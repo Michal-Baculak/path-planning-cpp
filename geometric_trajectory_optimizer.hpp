@@ -15,12 +15,25 @@ struct Point
 };
 class GeometricTrajectoryOptimizer
 {
-    public: 
+    class Config
+    {
+        public:
+            double safetyMargin = 1.5;
+            double parametrizationSpacing = 3;
+    };
+    private:
+        GeometricTrajectoryOptimizer::Config config_;
+        
+        vector<Point> innerCones_;
+        vector<Point> outerCones_;
+        vector<vector<double>> base_;
+        vector<double> alphas_;
+
         static vector<double> velocityProfile(vector<Point> trajectory);
         static double distance(const Point& a, const Point& b);
         static bool crossesBetween(const Point& A, const Point& B, const Point& origin, const Point& direction, Point& intersection);
         static std::vector<std::vector<double>> parametrize(const std::vector<Point>& innerCones, const std::vector<Point>& outerCones, int resolution);
-        static std::vector<std::vector<double>> parametrize_gradual(std::vector<Point> innerCones,std::vector<Point> outerCones,double ds,bool is_closed);
+        static std::vector<std::vector<double>> parametrize_gradual(std::vector<Point> innerCones,std::vector<Point> outerCones, double ds,bool is_closed);
         static vector<double> angle_profile(const vector<vector<double>>& base, const vector<double>& alphas);
         static vector<double> angle_profile(const vector<Point>& pts);
         static vector<double> distance_profile(const vector<vector<double>>& base, const vector<double>& alphas);
@@ -57,5 +70,10 @@ class GeometricTrajectoryOptimizer
         );
         static vector<double> optimize(const vector<Point>& innerCones, const vector<Point>& outerCones, vector<vector<double>>& base);
         static pair<vector<Point>,vector<Point>> safety_margin(const vector<Point>& inner, const vector<Point>& outer, double margin) ;
-
+    public: 
+        bool update(std::vector<Point> innerCones,std::vector<Point> outerCones);
+        GeometricTrajectoryOptimizer::Config& getConfig();
+        vector<Point> getPath();
+        vector<double> getRefSpeed();
+        void plot_all();
 };

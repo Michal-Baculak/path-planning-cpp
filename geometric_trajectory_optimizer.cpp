@@ -892,3 +892,59 @@ pair<vector<Point>,vector<Point>> GeometricTrajectoryOptimizer::safety_margin
     vector<Point> outerNew = safety_margin_oneline(outer, margin, -dir);
     return pair<vector<Point>,vector<Point>>(innerNew, outerNew);
 }
+
+bool GeometricTrajectoryOptimizer::update(std::vector<Point> innerCones,std::vector<Point> outerCones)
+{
+    innerCones_ = innerCones;
+    outerCones_ = outerCones;
+    auto [inner, outer] = safety_margin(innerCones, outerCones, config_.safetyMargin);
+    base_ = GeometricTrajectoryOptimizer::parametrize_gradual(inner,outer, config_.parametrizationSpacing, true);
+    if(base_.size() != alphas_.size())
+        alphas_ = vector<double>(base_.size(),0.5);
+    //close the track (only mode implemented)
+    base_.push_back(base_.at(0));
+    nlopt::opt opt(nlopt::LD_SLSQP, alphas_.size());
+
+    opt.set_min_objective(w_k2_l_grad_objective_function, static_cast<void*>(&base_));
+
+    opt.set_lower_bounds(0.0);
+    opt.set_upper_bounds(1.0);
+
+    //"MaxFunctionEvaluations",10e3, "StepTolerance",1e-20
+    opt.set_maxeval(40e3);
+    // cout << "setting minimum tolerances: " << numeric_limits<double>::min() << endl;
+    opt.set_xtol_rel(1e-9);
+    opt.set_xtol_abs(1e-12);
+
+    //much shorter than needed on purpose
+    // opt.set_maxtime(0.2);
+
+    // opt.set_ftol_abs(1e-24);
+    // opt.set_ftol_rel(1e-18);
+
+    double opt_k2 = 0;
+    nlopt::result result = opt.optimize(alphas_, opt_k2);
+    if(result >=1 )
+    {
+        cout << "Optimization successful!" << endl;
+        return true;
+    }
+    else
+    {
+        cout << "Optimization failed!" << endl;
+        return false;
+    }
+}
+GeometricTrajectoryOptimizer::Config& GeometricTrajectoryOptimizer::getConfig() { return config_; }
+vector<Point> GeometricTrajectoryOptimizer::getPath() { return get_points(base_, alphas_); }
+vector<double> GeometricTrajectoryOptimizer::getRefSpeed()
+{
+    //Before I implement the actual velocity profile
+    //taken from sgtdv-ros_implementation/src/path_planning/params/path_planning_sim.yaml
+    vector<double> speedProf(alphas_.size(), 4.0);
+    return speedProf;
+}
+void GeometricTrajectoryOptimizer::plot_all()
+{
+    plot_all(innerCones_,outerCones_,base_,alphas_);
+}
