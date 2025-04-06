@@ -105,8 +105,20 @@ int main()
     // base.push_back(base.at(0));
     // auto grad_w = GeometricTrajectoryOptimizer::grad_w_k2_l(base, alphas, 0.5);
     GeometricTrajectoryOptimizer opt{};
+    opt.getConfig().objective_function = GeometricTrajectoryOptimizer::w_k2_l_grad_objective_function;
+    opt.getConfig().enableTimeLimit = true; //0.2s default
+    opt.getConfig().timeLimit = 0.5; //0.2s default
+    opt.getConfig().parametrizationSpacing = 4; 
+
+    // opt.getConfig().objective_function = GeometricTrajectoryOptimizer::k2_grad_objective_function;
     auto start = std::chrono::high_resolution_clock::now(); 
-    opt.update(innerCones, outerCones);
+    bool result = false;
+    int iteration = 0;
+    while(!result)
+    {
+        cout << "running " << iteration++ << ". iteration\n"; 
+        result = opt.update(innerCones, outerCones);
+    }
     // alphas = GeometricTrajectoryOptimizer::optimize(innerCones, outerCones, base);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);

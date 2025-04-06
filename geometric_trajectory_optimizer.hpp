@@ -20,6 +20,17 @@ class GeometricTrajectoryOptimizer
         public:
             double safetyMargin = 1.5;
             double parametrizationSpacing = 3;
+            double klWeight = 0.5;
+            nlopt::algorithm nlopt_algorithm = nlopt::LD_SLSQP;
+            nlopt::vfunc objective_function = w_k2_l_grad_objective_function;
+            bool enableTimeLimit = false;
+            double timeLimit = 0.2;
+    };
+    class ObjFunData
+    {
+        public:
+            vector<vector<double>> base;
+            double w;
     };
     private:
         GeometricTrajectoryOptimizer::Config config_;
@@ -31,6 +42,7 @@ class GeometricTrajectoryOptimizer
 
         static vector<double> velocityProfile(vector<Point> trajectory);
         static double distance(const Point& a, const Point& b);
+        static double linearInterp(const std::vector<double>& t, const std::vector<double>& v, double s);
         static bool crossesBetween(const Point& A, const Point& B, const Point& origin, const Point& direction, Point& intersection);
         static std::vector<std::vector<double>> parametrize(const std::vector<Point>& innerCones, const std::vector<Point>& outerCones, int resolution);
         static std::vector<std::vector<double>> parametrize_gradual(std::vector<Point> innerCones,std::vector<Point> outerCones, double ds,bool is_closed);
@@ -50,15 +62,7 @@ class GeometricTrajectoryOptimizer
         static vector<double> grad_w_k2_l(const vector<vector<double>>& base, const vector<double>& alphas, double w);
         static vector<double> grad_w_k2_l2(const vector<vector<double>>& base, const vector<double>& alphas, double w);
 
-        static double k2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
-        static double k2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
-        static double l2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
-        static double l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
-        static double l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
-        static double l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
-        static double w_k2_l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
-        static double w_k2_l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
-        static double w_k2_l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+
         static vector<Point> get_points(const vector<vector<double>>& base, const vector<double>& alphas);
         static double get_angle(const Point& A, const Point& B, const Point& C);
         static void plot_demo(const vector<double>& x, const vector<double>& y);
@@ -76,4 +80,15 @@ class GeometricTrajectoryOptimizer
         vector<Point> getPath();
         vector<double> getRefSpeed();
         void plot_all();
+
+        //objective functions made accessible for config_
+        static double k2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double k2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double l2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double w_k2_l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double w_k2_l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
+        static double w_k2_l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data);
 };
