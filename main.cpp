@@ -109,6 +109,8 @@ int main()
     opt.getConfig().enableTimeLimit = true; //0.2s default
     opt.getConfig().timeLimit = 0.5; //0.2s default
     opt.getConfig().parametrizationSpacing = 4; 
+    opt.getConfig().xtolRel = 5e-3; 
+    opt.getConfig().xtolAbs = 1e-12; 
 
     // opt.getConfig().objective_function = GeometricTrajectoryOptimizer::k2_grad_objective_function;
     auto start = std::chrono::high_resolution_clock::now(); 

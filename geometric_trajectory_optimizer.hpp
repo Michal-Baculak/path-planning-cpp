@@ -25,6 +25,8 @@ class GeometricTrajectoryOptimizer
             nlopt::vfunc objective_function = w_k2_l_grad_objective_function;
             bool enableTimeLimit = false;
             double timeLimit = 0.2;
+            double xtolRel = 1e-9; //5e-3 still works
+            double xtolAbs = 1e-12; //1e-2 still works
     };
     class ObjFunData
     {

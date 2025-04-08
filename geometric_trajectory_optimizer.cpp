@@ -926,18 +926,18 @@ bool GeometricTrajectoryOptimizer::update(std::vector<Point> innerCones,std::vec
     opt.set_lower_bounds(0.0);
     opt.set_upper_bounds(1.0);
 
-    //"MaxFunctionEvaluations",10e3, "StepTolerance",1e-20
-    opt.set_maxeval(40e3);
-    // cout << "setting minimum tolerances: " << numeric_limits<double>::min() << endl;
-    opt.set_xtol_rel(1e-9);
-    opt.set_xtol_abs(1e-12);
+    // Multiple stopping criteria are possible, choose at least one, not setting results in that criteria not being applied
+    // https://nlopt.readthedocs.io/en/latest/NLopt_C-plus-plus_Reference/#stopping-criteria
+    // opt.set_maxeval(40e3);
+    // opt.set_ftol_abs(1e-24);
+    // opt.set_ftol_rel(1e-18);
+
+    opt.set_xtol_rel(config_.xtolRel);
+    opt.set_xtol_abs(config_.xtolAbs);
 
     //much shorter than needed on purpose
     if(config_.enableTimeLimit)
         opt.set_maxtime(config_.timeLimit);
-
-    // opt.set_ftol_abs(1e-24);
-    // opt.set_ftol_rel(1e-18);
 
     double opt_k2 = 0;
     nlopt::result result = opt.optimize(alphas_, opt_k2);
