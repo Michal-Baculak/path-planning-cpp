@@ -34,8 +34,19 @@ class GeometricTrajectoryOptimizer
             vector<vector<double>> base;
             double w;
     };
+    struct VehicleModel
+    {
+        double a_lat_max = 19.62;
+        double a_front_max = 19.62;
+        double a_max_brake = 19.62;
+        double max_power = 100e3;
+        double v_max = 33.3;
+        double mass = 270;
+        double c_steering = 1;
+    };
     private:
         GeometricTrajectoryOptimizer::Config config_;
+        GeometricTrajectoryOptimizer::VehicleModel vehicle_model_;
         
         vector<Point> innerCones_;
         vector<Point> outerCones_;
@@ -80,7 +91,7 @@ class GeometricTrajectoryOptimizer
         bool update(std::vector<Point> innerCones,std::vector<Point> outerCones);
         GeometricTrajectoryOptimizer::Config& getConfig();
         vector<Point> getPath();
-        vector<double> getRefSpeed();
+        vector<double> getRefSpeed(Point pose, double v0);
         void plot_all();
 
         //objective functions made accessible for config_
