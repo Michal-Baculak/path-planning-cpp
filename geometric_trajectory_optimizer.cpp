@@ -958,6 +958,9 @@ bool GeometricTrajectoryOptimizer::update(std::vector<Point> innerCones,std::vec
     }
 }
 GeometricTrajectoryOptimizer::Config& GeometricTrajectoryOptimizer::getConfig() { return config_; }
+GeometricTrajectoryOptimizer::VehicleModel& GeometricTrajectoryOptimizer::getVehicleModel() { return vehicle_model_; }
+void GeometricTrajectoryOptimizer::setConfig(GeometricTrajectoryOptimizer::Config config) { config_ = config; }
+void GeometricTrajectoryOptimizer::setVehicleModel(GeometricTrajectoryOptimizer::VehicleModel vehicleModel) { vehicle_model_ = vehicleModel; }
 vector<Point> GeometricTrajectoryOptimizer::getPath() { return get_points(base_, alphas_); }
 vector<double> GeometricTrajectoryOptimizer::getRefSpeed(Point pose, double v0)
 {

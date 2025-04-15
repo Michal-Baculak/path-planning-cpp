@@ -15,35 +15,35 @@ struct Point
 };
 class GeometricTrajectoryOptimizer
 {
-    class Config
+    struct ObjFunData
     {
-        public:
-            double safetyMargin = 1.5;
-            double parametrizationSpacing = 3;
-            double klWeight = 0.5;
-            nlopt::algorithm nlopt_algorithm = nlopt::LD_SLSQP;
-            nlopt::vfunc objective_function = w_k2_l_grad_objective_function;
-            bool enableTimeLimit = false;
-            double timeLimit = 0.2;
-            double xtolRel = 1e-9; //5e-3 still works
-            double xtolAbs = 1e-12; //1e-2 still works
+        vector<vector<double>> base;
+        double w;
     };
-    class ObjFunData
-    {
-        public:
-            vector<vector<double>> base;
-            double w;
-    };
-    struct VehicleModel
-    {
-        double a_lat_max = 19.62;
-        double a_front_max = 19.62;
-        double a_max_brake = 19.62;
-        double max_power = 100e3;
-        double v_max = 33.3;
-        double mass = 270;
-        double c_steering = 1;
-    };
+    public:
+        struct Config
+        {
+            public:
+                double safetyMargin = 1.5;
+                double parametrizationSpacing = 3;
+                double klWeight = 0.5;
+                nlopt::algorithm nlopt_algorithm = nlopt::LD_SLSQP;
+                nlopt::vfunc objective_function = w_k2_l_grad_objective_function;
+                bool enableTimeLimit = false;
+                double timeLimit = 0.2;
+                double xtolRel = 1e-9; //5e-3 still works
+                double xtolAbs = 1e-12; //1e-2 still works
+        };
+        struct VehicleModel
+        {
+            double a_lat_max = 19.62;
+            double a_front_max = 19.62;
+            double a_max_brake = 19.62;
+            double max_power = 100e3;
+            double v_max = 33.3;
+            double mass = 270;
+            double c_steering = 1;
+        };
     private:
         GeometricTrajectoryOptimizer::Config config_;
         GeometricTrajectoryOptimizer::VehicleModel vehicle_model_;
@@ -90,6 +90,9 @@ class GeometricTrajectoryOptimizer
     public: 
         bool update(std::vector<Point> innerCones,std::vector<Point> outerCones);
         GeometricTrajectoryOptimizer::Config& getConfig();
+        GeometricTrajectoryOptimizer::VehicleModel& getVehicleModel();
+        void setConfig(Config config);
+        void setVehicleModel(VehicleModel vehicleModel);
         vector<Point> getPath();
         vector<double> getRefSpeed(Point pose, double v0);
         void plot_all();
