@@ -126,7 +126,8 @@ int main()
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     cout << "Optimization time in us: " << duration.count() << "us\n";
     // test points: {8,46}, {47,31}, {-10, 22}, {40, -30}
-    auto v_prof = opt.getRefSpeed({-10, 22}, 4);
+    auto v_prof = opt.getRefSpeed({-10, 22}, 4); // initializing call 
+    v_prof = opt.getRefSpeed({10, -5}, 24); // updating call - current velocity is irrelevant 
     opt.plot_all();
     // ofstream alphasFile("alphas.txt");
     // if(!alphasFile.is_open())

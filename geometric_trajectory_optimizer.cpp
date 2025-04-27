@@ -23,11 +23,6 @@ bool operator!=(const Point& a, const Point& b)
     return (a.x != b.x) || (a.y != b.y); 
 }
 
-vector<double> GeometricTrajectoryOptimizer::velocityProfile(vector<Point> trajectory)
-{
-    cout << "velocityProfile unimplemented!";
-    return {};
-}
 double GeometricTrajectoryOptimizer::get_angle(const Point& A, const Point& B, const Point& C)
 {
     Point l1 = B-A;
@@ -671,7 +666,7 @@ double GeometricTrajectoryOptimizer::k2_objective_function(const std::vector<dou
     for (auto k2:k2_prof)
         if(!isnan(k2))
             output += k2;
-    cout << "Objective function called! F_val: " << output << endl;
+    // cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
 double GeometricTrajectoryOptimizer::k2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
@@ -684,7 +679,7 @@ double GeometricTrajectoryOptimizer::k2_grad_objective_function(const std::vecto
     for (auto k2:k2_prof)
         if(!isnan(k2))
             output += k2;
-    cout << "Objective function called! F_val: " << output << endl;
+    // cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
 double GeometricTrajectoryOptimizer::l2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
@@ -696,7 +691,7 @@ double GeometricTrajectoryOptimizer::l2_objective_function(const std::vector<dou
     for (auto l2:l2_prof)
         if(!isnan(l2))
             output += l2;
-    cout << "Objective function called! F_val: " << output << endl;
+    // cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
 double GeometricTrajectoryOptimizer::l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
@@ -709,7 +704,7 @@ double GeometricTrajectoryOptimizer::l2_grad_objective_function(const std::vecto
     for (auto l2:l2_prof)
         if(!isnan(l2))
             output += l2;
-    cout << "Objective function called! F_val: " << output << endl;
+    // cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
 double GeometricTrajectoryOptimizer::l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
@@ -721,7 +716,7 @@ double GeometricTrajectoryOptimizer::l_objective_function(const std::vector<doub
     for (auto l:l_prof)
         if(!isnan(l))
             output += l;
-    cout << "Objective function called! F_val: " << output << endl;
+    // cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
 double GeometricTrajectoryOptimizer::l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
@@ -734,7 +729,7 @@ double GeometricTrajectoryOptimizer::l_grad_objective_function(const std::vector
     for (auto l:l_prof)
         if(!isnan(l))
             output += l;
-    cout << "Objective function called! F_val: " << output << endl;
+    // cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
 double GeometricTrajectoryOptimizer::w_k2_l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
@@ -753,7 +748,7 @@ double GeometricTrajectoryOptimizer::w_k2_l_objective_function(const std::vector
     auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance_profile(base, alpha_ref));
     string skibidi = "toilet"; //prod by Jakub Maslen
     double output = w*k2/k2_ref + (1-w)*l/l_ref;
-    cout << "Objective function called! F_val: " << output << endl;
+    // cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
 double GeometricTrajectoryOptimizer::w_k2_l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
@@ -773,7 +768,7 @@ double GeometricTrajectoryOptimizer::w_k2_l_grad_objective_function(const std::v
     auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance_profile(base, alpha_ref));
     string skibidi = "toilet"; //prod by Jakub Maslen
     double output = w*k2/k2_ref + (1-w)*l/l_ref;
-    cout << "Objective function called! F_val: " << output << endl;
+    // cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
 double GeometricTrajectoryOptimizer::w_k2_l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
@@ -792,7 +787,7 @@ double GeometricTrajectoryOptimizer::w_k2_l2_grad_objective_function(const std::
     auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(base, alpha_ref));
     auto l2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2_profile(base, alpha_ref));
     double output = w*k2/k2_ref + (1-w)*l2/l2_ref;
-    cout << "Objective function called! F_val: " << output << endl;
+    // cout << "Objective function called! F_val: " << output << endl;
     return output;
 }
 vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& innerCones, const vector<Point>& outerCones, vector<vector<double>>& base)
@@ -909,10 +904,14 @@ bool GeometricTrajectoryOptimizer::update(std::vector<Point> innerCones,std::vec
     auto [inner, outer] = safety_margin(innerCones, outerCones, config_.safetyMargin);
     base_ = GeometricTrajectoryOptimizer::parametrize_gradual(inner,outer, config_.parametrizationSpacing, true);
     
-    //if parametrization adds and extra line, or this is the first run, initialize alphas
-    //otherwise last iteration's alphas are used as a starting point for current optimization
+    // if parametrization adds and extra line, or this is the first run, initialize alphas
+    // otherwise last iteration's alphas are used as a starting point for current optimization
+    // also clear velocity profile, because the dimensions won't match anymore 
     if(base_.size() != alphas_.size())
+    {
         alphas_ = vector<double>(base_.size(),0.5);
+        v_prof_.clear(); 
+    }
     //close the track (only mode implemented)
     base_.push_back(base_.at(0));
 
@@ -999,8 +998,19 @@ vector<double> GeometricTrajectoryOptimizer::getRefSpeed(Point pose, double v0)
         double v_steering = vehicle_model_.c_steering*d_prof.at(i)/dk;
         v_prof.at(i) = fmin(fmin(v_k, v_steering), vehicle_model_.v_max);
     }
-
-    v_prof.at(i0) = v0;
+    if(v_prof_.empty())
+    {
+        cout << "Reference velocity empty, initializing...\n";
+        v_prof.at(i0) = v0;
+    }
+    else
+    {
+        cout << "Reference velocity is initialized, extending...\n";
+        v_prof.at(i0) = v_prof_.at(i0);
+        // NOTE: for v_prof_.at(i0) to be valid, program needs to make sure, that when the track gets reparametrized
+        // with increased number of lines, v_prof_ needs to be cleared, and therefore recalculated in the next iteration
+        // instead of being based on existing outdated-parametrization profile (see parametrize)
+    }
     //forward pass - consider residual acceleration left in corner for acceleration
     for (size_t j = 0; j < v_prof.size() -1; j++)
     {
@@ -1031,6 +1041,7 @@ vector<double> GeometricTrajectoryOptimizer::getRefSpeed(Point pose, double v0)
         );
         v_prof.at(im1) = fmin(v_prof.at(im1), v_avail);
     }
+    v_prof_ = v_prof;
     return v_prof;
 }
 void GeometricTrajectoryOptimizer::plot_all()

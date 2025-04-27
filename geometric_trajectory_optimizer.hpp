@@ -52,8 +52,8 @@ class GeometricTrajectoryOptimizer
         vector<Point> outerCones_;
         vector<vector<double>> base_;
         vector<double> alphas_;
+        vector<double> v_prof_;
 
-        static vector<double> velocityProfile(vector<Point> trajectory);
         static double distance(const Point& a, const Point& b);
         static double linearInterp(const std::vector<double>& t, const std::vector<double>& v, double s);
         static bool crossesBetween(const Point& A, const Point& B, const Point& origin, const Point& direction, Point& intersection);
