@@ -44,7 +44,7 @@ int main()
     
     // Parametrize track
     // auto base = GeometricTrajectoryOptimizer::parametrize(innerCones,outerCones, 100);
-    // auto base = GeometricTrajectoryOptimizer::parametrize_gradual(innerCones,outerCones, 2, true);
+    // auto base = GeometricTrajectoryOptimizer::parametrizeGradual(innerCones,outerCones, 2, true);
 
     // // Save parametrization in a file
     // ofstream baseFile("base.txt");
@@ -62,7 +62,7 @@ int main()
 
     // vector<double> alphas(base.size(), 0.0);
 
-    // vector<Point> pts = GeometricTrajectoryOptimizer::get_points(base, alphas);
+    // vector<Point> pts = GeometricTrajectoryOptimizer::getPoints(base, alphas);
     // auto pts = opt.getPath();
 
     // ofstream trajFile("trajectory.txt");
@@ -77,9 +77,9 @@ int main()
     // trajFile.close();
     
     // unit test profile functions;
-    // auto s_prof = GeometricTrajectoryOptimizer::distance_profile(base, alphas);
-    // auto k_prof = GeometricTrajectoryOptimizer::curvature_profile(base, alphas);
-    // auto k2_prof = GeometricTrajectoryOptimizer::curvature2_profile(base, alphas);
+    // auto s_prof = GeometricTrajectoryOptimizer::distanceProfile(base, alphas);
+    // auto k_prof = GeometricTrajectoryOptimizer::curvatureProfile(base, alphas);
+    // auto k2_prof = GeometricTrajectoryOptimizer::curvature2Profile(base, alphas);
 
     // ofstream profFile("profiles.txt");
     // if(!profFile.is_open())
@@ -100,19 +100,19 @@ int main()
     //     profFile << k2 << endl;
     // profFile.close();
 
-    // GeometricTrajectoryOptimizer::plot_demo({1,2,3,4,5}, {1,4,9,16,25});
-    // GeometricTrajectoryOptimizer::plot_all(innerCones,outerCones,base,alphas);
+    // GeometricTrajectoryOptimizer::plotDemo({1,2,3,4,5}, {1,4,9,16,25});
+    // GeometricTrajectoryOptimizer::plotAll(innerCones,outerCones,base,alphas);
     // base.push_back(base.at(0));
-    // auto grad_w = GeometricTrajectoryOptimizer::grad_w_k2_l(base, alphas, 0.5);
+    // auto grad_w = GeometricTrajectoryOptimizer::gradK2L(base, alphas, 0.5);
     GeometricTrajectoryOptimizer opt{};
-    opt.getConfig().objective_function = GeometricTrajectoryOptimizer::w_k2_l_grad_objective_function;
+    opt.getConfig().objective_function = GeometricTrajectoryOptimizer::k2LGradObjectiveFunction;
     opt.getConfig().enableTimeLimit = true; //0.2s default
     opt.getConfig().timeLimit = 0.5; //0.2s default
     opt.getConfig().parametrizationSpacing = 4; 
     opt.getConfig().xtolRel = 5e-3; 
     opt.getConfig().xtolAbs = 1e-12; 
 
-    // opt.getConfig().objective_function = GeometricTrajectoryOptimizer::k2_grad_objective_function;
+    // opt.getConfig().objective_function = GeometricTrajectoryOptimizer::k2GradObjectiveFunction;
     auto start = std::chrono::high_resolution_clock::now(); 
     bool result = false;
     int iteration = 0;
@@ -128,7 +128,12 @@ int main()
     // test points: {8,46}, {47,31}, {-10, 22}, {40, -30}
     auto v_prof = opt.getRefSpeed({-10, 22}, 4); // initializing call 
     v_prof = opt.getRefSpeed({10, -5}, 24); // updating call - current velocity is irrelevant 
-    opt.plot_all();
+    auto pts = opt.getPath();
+    for (size_t i = 0; i < pts.size(); i++)
+    {
+        v_prof = opt.getRefSpeed(pts.at(i), 4);
+    }
+    opt.plotAll();
     // ofstream alphasFile("alphas.txt");
     // if(!alphasFile.is_open())
     // {

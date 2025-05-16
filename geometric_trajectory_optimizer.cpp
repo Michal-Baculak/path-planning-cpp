@@ -1,6 +1,5 @@
 #include "geometric_trajectory_optimizer.hpp"
 
-using namespace std;
 Point operator-(const Point& a, const Point& b) 
 {
     return {a.x - b.x, a.y - b.y};
@@ -23,7 +22,7 @@ bool operator!=(const Point& a, const Point& b)
     return (a.x != b.x) || (a.y != b.y); 
 }
 
-double GeometricTrajectoryOptimizer::get_angle(const Point& A, const Point& B, const Point& C)
+double GeometricTrajectoryOptimizer::getAngle(const Point& A, const Point& B, const Point& C)
 {
     Point l1 = B-A;
     Point l2 = C-B;
@@ -36,16 +35,16 @@ double GeometricTrajectoryOptimizer::get_angle(const Point& A, const Point& B, c
         a = a + 2*M_PI;
     return a;
 }
-vector<double> GeometricTrajectoryOptimizer::angle_profile(const vector<vector<double>>& base, const vector<double>& alphas)
+std::vector<double> GeometricTrajectoryOptimizer::angleProfile(const std::vector<std::vector<double>>& base, const std::vector<double>& alphas)
 {
-    auto pts = get_points(base, alphas);
-    vector<double> output(alphas.size(), 0.0);
+    auto pts = getPoints(base, alphas);
+    std::vector<double> output(alphas.size(), 0.0);
     if(base.front() != base.back())
     {
         //open track (unconnected)
         output.at(0) = output.back() = nan("");
         for(int i = 1; i < alphas.size() - 1; i++)
-            output.at(i) = get_angle(pts.at(i-1), pts.at(i), pts.at(i+1));
+            output.at(i) = getAngle(pts.at(i-1), pts.at(i), pts.at(i+1));
         return output;
     }
 
@@ -53,34 +52,34 @@ vector<double> GeometricTrajectoryOptimizer::angle_profile(const vector<vector<d
     pts.insert(pts.begin(), pts.back());
     pts.push_back(pts.at(1));
     for(int i = 1; i < alphas.size() + 1; i++)
-        output.at(i-1) = get_angle(pts.at(i-1), pts.at(i), pts.at(i+1));
+        output.at(i-1) = getAngle(pts.at(i-1), pts.at(i), pts.at(i+1));
     return output;
 }
-vector<double> GeometricTrajectoryOptimizer::angle_profile(const vector<Point>& pts)
+std::vector<double> GeometricTrajectoryOptimizer::angleProfile(const std::vector<Point>& pts)
 {
-    vector<double> output;
+    std::vector<double> output;
     if(pts.front() != pts.back())
     {
         //open track (unconnected)
-        output = vector<double>(pts.size(), 0.0);
+        output = std::vector<double>(pts.size(), 0.0);
         output.at(0) = output.back() = nan("");
         for(int i = 1; i < pts.size() - 1; i++)
-            output.at(i) = get_angle(pts.at(i-1), pts.at(i), pts.at(i+1));
+            output.at(i) = getAngle(pts.at(i-1), pts.at(i), pts.at(i+1));
         return output;
     }
 
     // closed track
     auto _pts = pts;
-    output = vector<double>(_pts.size()-1, 0.0);
+    output = std::vector<double>(_pts.size()-1, 0.0);
     _pts.insert(_pts.begin(), _pts.at(_pts.size()-2));
     for(int i = 1; i < output.size() + 1; i++)
-        output.at(i-1) = get_angle(_pts.at(i-1), _pts.at(i), _pts.at(i+1));
+        output.at(i-1) = getAngle(_pts.at(i-1), _pts.at(i), _pts.at(i+1));
     return output;
 }
-vector<double> GeometricTrajectoryOptimizer::distance_profile(const vector<vector<double>>& base, const vector<double>& alphas)
+std::vector<double> GeometricTrajectoryOptimizer::distanceProfile(const std::vector<std::vector<double>>& base, const std::vector<double>& alphas)
 {
-    auto pts = get_points(base, alphas);
-    vector<double> output(alphas.size(), 0.0);
+    auto pts = getPoints(base, alphas);
+    std::vector<double> output(alphas.size(), 0.0);
     if(base.front() != base.back())
     {
         // open track
@@ -95,10 +94,10 @@ vector<double> GeometricTrajectoryOptimizer::distance_profile(const vector<vecto
         output.at(i) = distance(pts.at(i), pts.at(i+1));
     return output;
 }
-vector<double> GeometricTrajectoryOptimizer::distance2_profile(const vector<vector<double>>& base, const vector<double>& alphas)
+std::vector<double> GeometricTrajectoryOptimizer::distance2Profile(const std::vector<std::vector<double>>& base, const std::vector<double>& alphas)
 {
-    auto pts = get_points(base, alphas);
-    vector<double> output(alphas.size(), 0.0);
+    auto pts = getPoints(base, alphas);
+    std::vector<double> output(alphas.size(), 0.0);
     if(base.front() != base.back())
     {
         // open track
@@ -113,28 +112,28 @@ vector<double> GeometricTrajectoryOptimizer::distance2_profile(const vector<vect
         output.at(i) = pow(pts.at(i).x-pts.at(i+1).x,2) + pow(pts.at(i).y - pts.at(i+1).y,2);
     return output;
 }
-vector<double> GeometricTrajectoryOptimizer::curvature_profile(const vector<vector<double>>& base, const vector<double>& alphas)
+std::vector<double> GeometricTrajectoryOptimizer::curvatureProfile(const std::vector<std::vector<double>>& base, const std::vector<double>& alphas)
 {
-    auto angle_prof = angle_profile(base, alphas);
-    auto dist_prof = distance_profile(base, alphas);
-    vector<double> output(alphas.size(), 0.0);
+    auto angle_prof = angleProfile(base, alphas);
+    auto dist_prof = distanceProfile(base, alphas);
+    std::vector<double> output(alphas.size(), 0.0);
     for (int i = 0; i < alphas.size(); i++)
         output.at(i) = angle_prof.at(i)/dist_prof.at(i);
     return output;
 }
-vector<double> GeometricTrajectoryOptimizer::curvature2_profile(const vector<vector<double>>& base, const vector<double>& alphas)
+std::vector<double> GeometricTrajectoryOptimizer::curvature2Profile(const std::vector<std::vector<double>>& base, const std::vector<double>& alphas)
 {
-    auto angle_prof = angle_profile(base, alphas);
-    auto dist_prof = distance_profile(base, alphas);
-    vector<double> output(alphas.size(), 0.0);
+    auto angle_prof = angleProfile(base, alphas);
+    auto dist_prof = distanceProfile(base, alphas);
+    std::vector<double> output(alphas.size(), 0.0);
     for (int i = 0; i < alphas.size(); i++)
         output.at(i) = pow(angle_prof.at(i)/dist_prof.at(i), 2);
     return output;
 }
 
-vector<Point> GeometricTrajectoryOptimizer::get_points(const vector<vector<double>> &base, const vector<double> &alphas)
+std::vector<Point> GeometricTrajectoryOptimizer::getPoints(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas)
 {
-    vector<Point> P;
+    std::vector<Point> P;
     for (size_t i = 0; i < alphas.size(); ++i) {
         Point A = {base[i][0], base[i][1]};
         Point B = {base[i][2], base[i][3]};
@@ -261,7 +260,7 @@ double GeometricTrajectoryOptimizer::linearInterp(const std::vector<double>& t, 
     return v.back();  //TODO: fallback behaviour should either handle the error case or throw an error
 }
 
-std::vector<std::vector<double>> GeometricTrajectoryOptimizer::parametrize_gradual(
+std::vector<std::vector<double>> GeometricTrajectoryOptimizer::parametrizeGradual(
     std::vector<Point> innerCones,
     std::vector<Point> outerCones,
     double ds,
@@ -392,7 +391,7 @@ std::vector<std::vector<double>> GeometricTrajectoryOptimizer::parametrize_gradu
     return base;
 }
 
-void GeometricTrajectoryOptimizer::plot_demo(const vector<double>& x, const vector<double>& y)
+void GeometricTrajectoryOptimizer::plotDemo(const std::vector<double>& x, const std::vector<double>& y)
 {
     Py_Initialize();
     PyRun_SimpleString("import sys; sys.path.append('.')");
@@ -401,7 +400,7 @@ void GeometricTrajectoryOptimizer::plot_demo(const vector<double>& x, const vect
     Py_XDECREF(pName);
     if(!pModule)
     {
-        cerr << "Failed to load Python module!" << endl;
+        std::cerr << "Failed to load Python module!" << std::endl;
         PyErr_Print();
         return;
     }
@@ -429,11 +428,11 @@ void GeometricTrajectoryOptimizer::plot_demo(const vector<double>& x, const vect
         }
     }
 }
-void GeometricTrajectoryOptimizer::plot_all(
-    const vector<Point>& innerCones, 
-    const vector<Point>& outerCones,
-    const vector<vector<double>>& base,
-    const vector<double>& alphas
+void GeometricTrajectoryOptimizer::plotAll(
+    const std::vector<Point>& innerCones, 
+    const std::vector<Point>& outerCones,
+    const std::vector<std::vector<double>>& base,
+    const std::vector<double>& alphas
 )
 {
     //TODO: robust memory management
@@ -444,7 +443,7 @@ void GeometricTrajectoryOptimizer::plot_all(
     Py_XDECREF(pName);
     if(!pModule)
     {
-        cerr << "Failed to load Python module \"plot_all\"!" << endl;
+        std::cerr << "Failed to load Python module \"plot_all\"!" << std::endl;
         PyErr_Print();
         Py_XDECREF(pModule);
         return;
@@ -474,7 +473,7 @@ void GeometricTrajectoryOptimizer::plot_all(
             PyList_SetItem(pListOutY, i, PyFloat_FromDouble(outerCones.at(i).y));
         }
         // for memory management
-        vector<PyObject*> baseLines;
+        std::vector<PyObject*> baseLines;
 
         for (int i = 0; i < base.size(); i++)
         {
@@ -487,7 +486,7 @@ void GeometricTrajectoryOptimizer::plot_all(
             PyList_SetItem(pListBase, i, pLineBaseI);
         }
         
-        auto pts = get_points(base, alphas);
+        auto pts = getPoints(base, alphas);
         for (int i = 0; i < alphas.size(); i++)
         {
             PyList_SetItem(pListPtsX, i, PyFloat_FromDouble(pts.at(i).x));
@@ -513,15 +512,15 @@ void GeometricTrajectoryOptimizer::plot_all(
     }
     Py_XDECREF(pModule);
 }
-vector<double> GeometricTrajectoryOptimizer::grad_l2(const vector<vector<double>>& base, const vector<double>& alphas)
+std::vector<double> GeometricTrajectoryOptimizer::gradL2(const std::vector<std::vector<double>>& base, const std::vector<double>& alphas)
 {
-    vector<double> grad(alphas.size(), 0.0);
+    std::vector<double> grad(alphas.size(), 0.0);
     if(base.front() != base.back())
     {
         return grad;
-        cerr << "Open track gradient calculation is not yet supported!" << endl;
+        std::cerr << "Open track gradient calculation is not yet supported!" << std::endl;
     }
-    auto pts = get_points(base, alphas);
+    auto pts = getPoints(base, alphas);
     // add last element to the front and first element to the back
     pts.insert(pts.begin(), pts.back());
     pts.push_back(pts.at(1));
@@ -547,16 +546,16 @@ double GeometricTrajectoryOptimizer::sum(const std::vector<double> &vec)
             output += val;
     return output;
 }
-vector<double> GeometricTrajectoryOptimizer::grad_k2(const vector<vector<double>> &base, const vector<double> &alphas)
+std::vector<double> GeometricTrajectoryOptimizer::gradK2(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas)
 {
-    vector<double> grad(alphas.size(), 0.0);
+    std::vector<double> grad(alphas.size(), 0.0);
     if(base.front() != base.back())
     {
         return grad;
-        cerr << "Open track gradient calculation is not yet supported!" << endl;
+        std::cerr << "Open track gradient calculation is not yet supported!" << std::endl;
     }
-    auto pts = get_points(base, alphas);
-    auto angles = angle_profile(base, alphas);
+    auto pts = getPoints(base, alphas);
+    auto angles = angleProfile(base, alphas);
     // add last element to the front and first element to the back
     angles.insert(angles.begin(), angles.back());
     angles.push_back(angles.at(1));
@@ -587,15 +586,15 @@ vector<double> GeometricTrajectoryOptimizer::grad_k2(const vector<vector<double>
     }
     return grad;
 }
-vector<double> GeometricTrajectoryOptimizer::grad_l(const vector<vector<double>>& base, const vector<double>& alphas)
+std::vector<double> GeometricTrajectoryOptimizer::gradL(const std::vector<std::vector<double>>& base, const std::vector<double>& alphas)
 {
-    vector<double> grad(alphas.size(), 0.0);
+    std::vector<double> grad(alphas.size(), 0.0);
     if(base.front() != base.back())
     {
         return grad;
-        cerr << "Open track gradient calculation is not yet supported!" << endl;
+        std::cerr << "Open track gradient calculation is not yet supported!" << std::endl;
     }
-    auto pts = get_points(base, alphas);
+    auto pts = getPoints(base, alphas);
     // add last element to the front and first element to the back
     pts.insert(pts.begin(), pts.back());
     pts.push_back(pts.at(1));
@@ -614,193 +613,193 @@ vector<double> GeometricTrajectoryOptimizer::grad_l(const vector<vector<double>>
     }
     return grad;
 }
-vector<double> GeometricTrajectoryOptimizer::grad_w_k2_l(const vector<vector<double>>& base, const vector<double>& alphas, double w)
+std::vector<double> GeometricTrajectoryOptimizer::gradK2L(const std::vector<std::vector<double>>& base, const std::vector<double>& alphas, double w)
 {
     //w = 0 -> optimize based on length
     //w = 1 -> optimize based on k2 
-    vector<double> grad(alphas.size(), 0.0);
+    std::vector<double> grad(alphas.size(), 0.0);
     if(base.front() != base.back())
     {
         return grad;
-        cerr << "Open track gradient calculation is not yet supported!" << endl;
+        std::cerr << "Open track gradient calculation is not yet supported!" << std::endl;
     }
-    auto g_k2 = grad_k2(base, alphas);
-    auto g_l = grad_l(base, alphas);
+    auto g_k2 = gradK2(base, alphas);
+    auto g_l = gradL(base, alphas);
 
-    const vector<double> alpha_ref(alphas.size(),0.5); 
-    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(base, alpha_ref));
-    auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance_profile(base, alpha_ref));
+    const std::vector<double> alpha_ref(alphas.size(),0.5); 
+    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2Profile(base, alpha_ref));
+    auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distanceProfile(base, alpha_ref));
 
     for (size_t i = 0; i < alphas.size(); i++)
         grad.at(i) = w*g_k2.at(i)/k2_ref + (1-w)*g_l.at(i)/l_ref;
     return grad;    
 }
-vector<double> GeometricTrajectoryOptimizer::grad_w_k2_l2(const vector<vector<double>> &base, const vector<double> &alphas, double w)
+std::vector<double> GeometricTrajectoryOptimizer::gradK2L2(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas, double w)
 {
     //w = 0 -> optimize based on length2
     //w = 1 -> optimize based on k2 
-    vector<double> grad(alphas.size(), 0.0);
+    std::vector<double> grad(alphas.size(), 0.0);
     if(base.front() != base.back())
     {
         return grad;
-        cerr << "Open track gradient calculation is not yet supported!" << endl;
+        std::cerr << "Open track gradient calculation is not yet supported!" << std::endl;
     }
-    auto g_k2 = grad_k2(base, alphas);
-    auto g_l2 = grad_l2(base, alphas);
+    auto g_k2 = gradK2(base, alphas);
+    auto g_l2 = gradL2(base, alphas);
 
-    const vector<double> alpha_ref(alphas.size(),0.5); 
-    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(base, alpha_ref));
-    auto l2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2_profile(base, alpha_ref));
+    const std::vector<double> alpha_ref(alphas.size(),0.5); 
+    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2Profile(base, alpha_ref));
+    auto l2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2Profile(base, alpha_ref));
 
     for (size_t i = 0; i < alphas.size(); i++)
         grad.at(i) = w*g_k2.at(i)/k2_ref + (1-w)*g_l2.at(i)/l2_ref;
     return grad; 
 }
 
-double GeometricTrajectoryOptimizer::k2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::k2ObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto data = static_cast<ObjFunData*>(f_data);
     auto base = data->base;
-    auto k2_prof = GeometricTrajectoryOptimizer::curvature2_profile(base, x);
+    auto k2_prof = GeometricTrajectoryOptimizer::curvature2Profile(base, x);
     double output = 0;
     for (auto k2:k2_prof)
         if(!isnan(k2))
             output += k2;
-    // cout << "Objective function called! F_val: " << output << endl;
+    // std::cout << "Objective function called! F_val: " << output << std::endl;
     return output;
 }
-double GeometricTrajectoryOptimizer::k2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::k2GradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto data = static_cast<ObjFunData*>(f_data);
     auto base = data->base;
-    auto k2_prof = GeometricTrajectoryOptimizer::curvature2_profile(base, x);
-    grad = GeometricTrajectoryOptimizer::grad_k2(base, x);
+    auto k2_prof = GeometricTrajectoryOptimizer::curvature2Profile(base, x);
+    grad = GeometricTrajectoryOptimizer::gradK2(base, x);
     double output = 0;
     for (auto k2:k2_prof)
         if(!isnan(k2))
             output += k2;
-    // cout << "Objective function called! F_val: " << output << endl;
+    // std::cout << "Objective function called! F_val: " << output << std::endl;
     return output;
 }
-double GeometricTrajectoryOptimizer::l2_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::l2ObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto data = static_cast<ObjFunData*>(f_data);
     auto base = data->base;
-    auto l2_prof = GeometricTrajectoryOptimizer::distance2_profile(base, x);
+    auto l2_prof = GeometricTrajectoryOptimizer::distance2Profile(base, x);
     double output = 0;
     for (auto l2:l2_prof)
         if(!isnan(l2))
             output += l2;
-    // cout << "Objective function called! F_val: " << output << endl;
+    // std::cout << "Objective function called! F_val: " << output << std::endl;
     return output;
 }
-double GeometricTrajectoryOptimizer::l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::l2GradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto data = static_cast<ObjFunData*>(f_data);
     auto base = data->base;
-    auto l2_prof = GeometricTrajectoryOptimizer::distance2_profile(base, x);
-    grad = GeometricTrajectoryOptimizer::grad_l2(base, x);
+    auto l2_prof = GeometricTrajectoryOptimizer::distance2Profile(base, x);
+    grad = GeometricTrajectoryOptimizer::gradL2(base, x);
     double output = 0;
     for (auto l2:l2_prof)
         if(!isnan(l2))
             output += l2;
-    // cout << "Objective function called! F_val: " << output << endl;
+    // std::cout << "Objective function called! F_val: " << output << std::endl;
     return output;
 }
-double GeometricTrajectoryOptimizer::l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::lObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto data = static_cast<ObjFunData*>(f_data);
     auto base = data->base;
-    auto l_prof = GeometricTrajectoryOptimizer::distance_profile(base, x);
+    auto l_prof = GeometricTrajectoryOptimizer::distanceProfile(base, x);
     double output = 0;
     for (auto l:l_prof)
         if(!isnan(l))
             output += l;
-    // cout << "Objective function called! F_val: " << output << endl;
+    // std::cout << "Objective function called! F_val: " << output << std::endl;
     return output;
 }
-double GeometricTrajectoryOptimizer::l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::lGradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     auto data = static_cast<ObjFunData*>(f_data);
     auto base = data->base;
-    auto l_prof = GeometricTrajectoryOptimizer::distance_profile(base, x);
-    grad = GeometricTrajectoryOptimizer::grad_l(base, x);
+    auto l_prof = GeometricTrajectoryOptimizer::distanceProfile(base, x);
+    grad = GeometricTrajectoryOptimizer::gradL(base, x);
     double output = 0;
     for (auto l:l_prof)
         if(!isnan(l))
             output += l;
-    // cout << "Objective function called! F_val: " << output << endl;
+    // std::cout << "Objective function called! F_val: " << output << std::endl;
     return output;
 }
-double GeometricTrajectoryOptimizer::w_k2_l_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::k2LObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     //w = 0 -> optimize based on length
     //w = 1 -> optimize based on k2 
-    const vector<double> alpha_ref(x.size(),0.5); 
+    const std::vector<double> alpha_ref(x.size(),0.5); 
     auto data = static_cast<ObjFunData*>(f_data);
     auto base = data->base;
     double w = data->w;
 
-    auto k2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(base, x));
-    auto l = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance_profile(base, x));
+    auto k2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2Profile(base, x));
+    auto l = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distanceProfile(base, x));
 
-    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(base, alpha_ref));
-    auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance_profile(base, alpha_ref));
-    string skibidi = "toilet"; //prod by Jakub Maslen
+    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2Profile(base, alpha_ref));
+    auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distanceProfile(base, alpha_ref));
+    std::string skibidi = "toilet"; //prod by Jakub Maslen
     double output = w*k2/k2_ref + (1-w)*l/l_ref;
-    // cout << "Objective function called! F_val: " << output << endl;
+    // std::cout << "Objective function called! F_val: " << output << std::endl;
     return output;
 }
-double GeometricTrajectoryOptimizer::w_k2_l_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::k2LGradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     //w = 0 -> optimize based on length
     //w = 1 -> optimize based on k2 
-    const vector<double> alpha_ref(x.size(),0.5); 
+    const std::vector<double> alpha_ref(x.size(),0.5); 
     auto data = static_cast<ObjFunData*>(f_data);
     auto base = data->base;
     double w = data->w;
-    grad = GeometricTrajectoryOptimizer::grad_w_k2_l(base, x, w);
+    grad = GeometricTrajectoryOptimizer::gradK2L(base, x, w);
 
-    auto k2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(base, x));
-    auto l = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance_profile(base, x));
+    auto k2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2Profile(base, x));
+    auto l = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distanceProfile(base, x));
 
-    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(base, alpha_ref));
-    auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance_profile(base, alpha_ref));
-    string skibidi = "toilet"; //prod by Jakub Maslen
+    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2Profile(base, alpha_ref));
+    auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distanceProfile(base, alpha_ref));
+    std::string skibidi = "toilet"; //prod by Jakub Maslen
     double output = w*k2/k2_ref + (1-w)*l/l_ref;
-    // cout << "Objective function called! F_val: " << output << endl;
+    // std::cout << "Objective function called! F_val: " << output << std::endl;
     return output;
 }
-double GeometricTrajectoryOptimizer::w_k2_l2_grad_objective_function(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
+double GeometricTrajectoryOptimizer::k2L2GradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void* f_data)
 {
     //w = 0 -> optimize based on length
     //w = 1 -> optimize based on k2 
-    const vector<double> alpha_ref(x.size(),0.5);
+    const std::vector<double> alpha_ref(x.size(),0.5);
     auto data = static_cast<ObjFunData*>(f_data); 
     auto base = data->base;
     double w = data->w; 
-    grad = GeometricTrajectoryOptimizer::grad_w_k2_l2(base, x, w);
+    grad = GeometricTrajectoryOptimizer::gradK2L2(base, x, w);
 
-    auto k2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(base, x));
-    auto l2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2_profile(base, x));
+    auto k2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2Profile(base, x));
+    auto l2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2Profile(base, x));
 
-    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2_profile(base, alpha_ref));
-    auto l2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2_profile(base, alpha_ref));
+    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2Profile(base, alpha_ref));
+    auto l2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2Profile(base, alpha_ref));
     double output = w*k2/k2_ref + (1-w)*l2/l2_ref;
-    // cout << "Objective function called! F_val: " << output << endl;
+    // std::cout << "Objective function called! F_val: " << output << std::endl;
     return output;
 }
-vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& innerCones, const vector<Point>& outerCones, vector<vector<double>>& base)
+std::vector<double> GeometricTrajectoryOptimizer::optimize(const std::vector<Point>& innerCones, const std::vector<Point>& outerCones, std::vector<std::vector<double>>& base)
 {
     //https://nlopt.readthedocs.io/en/latest/NLopt_Reference/
 
-    auto [inner, outer] = safety_margin(innerCones, outerCones, 1.5);
+    auto [inner, outer] = safetyMargin(innerCones, outerCones, 1.5);
     // base = GeometricTrajectoryOptimizer::parametrize(inner,outer, 100);
-    base = GeometricTrajectoryOptimizer::parametrize_gradual(inner,outer, 3, true);
+    base = GeometricTrajectoryOptimizer::parametrizeGradual(inner,outer, 3, true);
     // base = GeometricTrajectoryOptimizer::parametrize(innerCones,outerCones, 100);
 
     // some setups have varying results based on initial guess, 1.0 seems to be better for w_k2_l_grad OF (f.e.)
-    vector<double> alphas(base.size(), 1.0);
+    std::vector<double> alphas(base.size(), 1.0);
 
     base.push_back(base.at(0));
     // nlopt::opt opt(nlopt::LN_BOBYQA, alphas.size());
@@ -810,14 +809,14 @@ vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& inner
      //LD_TNEWTON - perfect for l and l2, lacks in k2
      //LD_SLSQP - okay for l and l2, perfect for k2
      //LD_LBFGS - perfect for w
-    opt.set_min_objective(w_k2_l_grad_objective_function, static_cast<void*>(&base));
+    opt.set_min_objective(k2LGradObjectiveFunction, static_cast<void*>(&base));
 
     opt.set_lower_bounds(0.0);
     opt.set_upper_bounds(1.0);
 
     //"MaxFunctionEvaluations",10e3, "StepTolerance",1e-20
     opt.set_maxeval(40e3);
-    // cout << "setting minimum tolerances: " << numeric_limits<double>::min() << endl;
+    // std::cout << "setting minimum tolerances: " << numeric_limits<double>::min() << std::endl;
     opt.set_xtol_rel(1e-9);
     opt.set_xtol_abs(1e-12);
 
@@ -830,9 +829,9 @@ vector<double> GeometricTrajectoryOptimizer::optimize(const vector<Point>& inner
     double opt_k2 = 0;
     nlopt::result result = opt.optimize(alphas, opt_k2);
     if(result >=1 )
-        cout << "Optimization successful!" << endl;
+        std::cout << "Optimization successful!" << std::endl;
     else
-        cout << "Optimization failed!" << endl;
+        std::cout << "Optimization failed!" << std::endl;
     return alphas;
 }
 
@@ -867,9 +866,9 @@ std::vector<Point> offset_points(const Point& A, const Point& B, const Point& C,
 }
 
 // Safety margin function for a single boundary
-vector<Point> safety_margin_oneline(const vector<Point>& in, double margin, double direction) {
+std::vector<Point> safety_margin_oneline(const std::vector<Point>& in, double margin, double direction) {
     size_t len = in.size();
-    vector<Point> out;
+    std::vector<Point> out;
     
     for (size_t i = 0; i < len; ++i) {
         Point A = in[(i + len - 1) % len];
@@ -885,31 +884,31 @@ vector<Point> safety_margin_oneline(const vector<Point>& in, double margin, doub
 }
 
 // Main safety margin function
-pair<vector<Point>,vector<Point>> GeometricTrajectoryOptimizer::safety_margin
-    (const vector<Point>& inner, const vector<Point>& outer, double margin) 
+std::pair<std::vector<Point>,std::vector<Point>> GeometricTrajectoryOptimizer::safetyMargin
+    (const std::vector<Point>& inner, const std::vector<Point>& outer, double margin) 
 {
     Point A = inner[1] - inner[0];
     Point B = outer[0] - inner[0];
     double dir = A.x * B.y - A.y * B.x;
     
-    vector<Point> innerNew = safety_margin_oneline(inner, margin, dir);
-    vector<Point> outerNew = safety_margin_oneline(outer, margin, -dir);
-    return pair<vector<Point>,vector<Point>>(innerNew, outerNew);
+    std::vector<Point> innerNew = safety_margin_oneline(inner, margin, dir);
+    std::vector<Point> outerNew = safety_margin_oneline(outer, margin, -dir);
+    return std::pair<std::vector<Point>,std::vector<Point>>(innerNew, outerNew);
 }
 
 bool GeometricTrajectoryOptimizer::update(std::vector<Point> innerCones,std::vector<Point> outerCones)
 {
     innerCones_ = innerCones;
     outerCones_ = outerCones;
-    auto [inner, outer] = safety_margin(innerCones, outerCones, config_.safetyMargin);
-    base_ = GeometricTrajectoryOptimizer::parametrize_gradual(inner,outer, config_.parametrizationSpacing, true);
+    auto [inner, outer] = safetyMargin(innerCones, outerCones, config_.safetyMargin);
+    base_ = GeometricTrajectoryOptimizer::parametrizeGradual(inner,outer, config_.parametrizationSpacing, true);
     
     // if parametrization adds and extra line, or this is the first run, initialize alphas
     // otherwise last iteration's alphas are used as a starting point for current optimization
     // also clear velocity profile, because the dimensions won't match anymore 
     if(base_.size() != alphas_.size())
     {
-        alphas_ = vector<double>(base_.size(),0.5);
+        alphas_ = std::vector<double>(base_.size(),0.5);
         v_prof_.clear(); 
     }
     //close the track (only mode implemented)
@@ -944,15 +943,15 @@ bool GeometricTrajectoryOptimizer::update(std::vector<Point> innerCones,std::vec
     {
         if(result == nlopt::MAXTIME_REACHED)
         {
-            cout << "Optimization reached timeLimit successfuly!" << endl;
+            std::cout << "Optimization reached timeLimit successfuly!" << std::endl;
             return false;
         }
-        cout << "Optimization succeeded with code: " << result << endl;
+        std::cout << "Optimization succeeded with code: " << result << std::endl;
         return true;
     }
     else
     {
-        cout << "Optimization failed!" << endl;
+        std::cout << "Optimization failed!" << std::endl;
         return false;
     }
 }
@@ -960,20 +959,20 @@ GeometricTrajectoryOptimizer::Config& GeometricTrajectoryOptimizer::getConfig() 
 GeometricTrajectoryOptimizer::VehicleModel& GeometricTrajectoryOptimizer::getVehicleModel() { return vehicle_model_; }
 void GeometricTrajectoryOptimizer::setConfig(GeometricTrajectoryOptimizer::Config config) { config_ = config; }
 void GeometricTrajectoryOptimizer::setVehicleModel(GeometricTrajectoryOptimizer::VehicleModel vehicleModel) { vehicle_model_ = vehicleModel; }
-vector<Point> GeometricTrajectoryOptimizer::getPath() { return get_points(base_, alphas_); }
-vector<double> GeometricTrajectoryOptimizer::getRefSpeed(Point pose, double v0)
+std::vector<Point> GeometricTrajectoryOptimizer::getPath() { return getPoints(base_, alphas_); }
+std::vector<double> GeometricTrajectoryOptimizer::getRefSpeed(Point pose, double v0)
 {
     /*
     //Before I implement the actual velocity profile
     //taken from sgtdv-ros_implementation/src/path_planning/params/path_planning_sim.yaml
-    vector<double> speedProf(alphas_.size(), 4.0);
+    std::vector<double> speedProf(alphas_.size(), 4.0);
     return speedProf;
     */
-    auto k_prof = curvature_profile(base_, alphas_);
-    auto d_prof = distance_profile(base_, alphas_);
+    auto k_prof = curvatureProfile(base_, alphas_);
+    auto d_prof = distanceProfile(base_, alphas_);
 
     // find the starting index by finding the closest point 
-    auto pts = get_points(base_, alphas_);
+    auto pts = getPoints(base_, alphas_);
     double minDist = distance(pose,pts.at(0));
     size_t i0 = 0;
     for (size_t i = 0; i < pts.size(); i++)
@@ -986,8 +985,8 @@ vector<double> GeometricTrajectoryOptimizer::getRefSpeed(Point pose, double v0)
         }
     }
     // increment i0 to make sure the starting index is ahead and not behind
-    i0++;
-    vector<double> v_prof(alphas_.size(), 4.0);
+    i0 = (i0 + 1)%alphas_.size();
+    std::vector<double> v_prof(alphas_.size(), 4.0);
     // basic constraints - max cornering speed, top speed, steering speed
     for (size_t j = 0; j < alphas_.size(); j++)
     {
@@ -1000,12 +999,12 @@ vector<double> GeometricTrajectoryOptimizer::getRefSpeed(Point pose, double v0)
     }
     if(v_prof_.empty())
     {
-        cout << "Reference velocity empty, initializing...\n";
+        std::cout << "Reference velocity empty, initializing...\n";
         v_prof.at(i0) = v0;
     }
     else
     {
-        cout << "Reference velocity is initialized, extending...\n";
+        std::cout << "Reference velocity is initialized, extending...\n";
         v_prof.at(i0) = v_prof_.at(i0);
         // NOTE: for v_prof_.at(i0) to be valid, program needs to make sure, that when the track gets reparametrized
         // with increased number of lines, v_prof_ needs to be cleared, and therefore recalculated in the next iteration
@@ -1044,7 +1043,7 @@ vector<double> GeometricTrajectoryOptimizer::getRefSpeed(Point pose, double v0)
     v_prof_ = v_prof;
     return v_prof;
 }
-void GeometricTrajectoryOptimizer::plot_all()
+void GeometricTrajectoryOptimizer::plotAll()
 {
-    plot_all(innerCones_,outerCones_,base_,alphas_);
+    plotAll(innerCones_,outerCones_,base_,alphas_);
 }
