@@ -928,7 +928,7 @@ std::pair<std::vector<Point>, std::vector<Point>> GeometricTrajectoryOptimizer::
   return std::pair<std::vector<Point>, std::vector<Point>>(inner_new, outer_new);
 }
 
-bool GeometricTrajectoryOptimizer::update(const std::vector<Point> &inner_cones, const std::vector<Point> &outer_cones)
+bool GeometricTrajectoryOptimizer::updateTrajectory(const std::vector<Point> &inner_cones, const std::vector<Point> &outer_cones)
 {
   inner_cones_ = inner_cones;
   outer_cones_ = outer_cones;
@@ -992,9 +992,8 @@ GeometricTrajectoryOptimizer::VehicleModel &GeometricTrajectoryOptimizer::getVeh
 void GeometricTrajectoryOptimizer::setConfig(const GeometricTrajectoryOptimizer::Config &config) { config_ = config; }
 void GeometricTrajectoryOptimizer::setVehicleModel(const GeometricTrajectoryOptimizer::VehicleModel &vehicle_model) { vehicle_model_ = vehicle_model; }
 std::vector<Point> GeometricTrajectoryOptimizer::getPath() const { return getPoints(base_, alphas_); }
-std::vector<double> GeometricTrajectoryOptimizer::getRefSpeed(const Point &pose, double v0)
+void GeometricTrajectoryOptimizer::updateRefSpeed(const Point &pose, double v0)
 {
-
   auto k_prof = curvatureProfile(base_, alphas_);
   auto d_prof = distanceProfile(base_, alphas_);
 
@@ -1066,8 +1065,12 @@ std::vector<double> GeometricTrajectoryOptimizer::getRefSpeed(const Point &pose,
     v_prof.at(im1) = fmin(v_prof.at(im1), v_avail);
   }
   v_prof_ = v_prof;
-  return v_prof;
 }
+const std::vector<double> &GeometricTrajectoryOptimizer::getRefSpeed() const
+{
+  return v_prof_;
+}
+
 void GeometricTrajectoryOptimizer::plotAll()
 {
   plotAll(inner_cones_, outer_cones_, base_, alphas_);

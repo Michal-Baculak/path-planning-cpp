@@ -90,13 +90,14 @@ private:
   static std::pair<std::vector<Point>, std::vector<Point>> safetyMargin(const std::vector<Point> &inner, const std::vector<Point> &outer, double margin);
 
 public:
-  bool update(const std::vector<Point> &inner_cones, const std::vector<Point> &outer_cones);
+  bool updateTrajectory(const std::vector<Point> &inner_cones, const std::vector<Point> &outer_cones);
   Config &getConfig();
   VehicleModel &getVehicleModel();
   void setConfig(const Config &config);
   void setVehicleModel(const VehicleModel &vehicle_model);
   std::vector<Point> getPath() const;
-  std::vector<double> getRefSpeed(const Point &pose, double v0);
+  void updateRefSpeed(const Point &pose, double v0);
+  const std::vector<double> &getRefSpeed() const;
   void plotAll();
 
   // objective functions made accessible for config_

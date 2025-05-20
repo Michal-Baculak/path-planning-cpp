@@ -119,19 +119,22 @@ int main()
     while(!result)
     {
         cout << "running " << iteration++ << ". iteration\n"; 
-        result = opt.update(innerCones, outerCones);
+        result = opt.updateTrajectory(innerCones, outerCones);
     }
     // alphas = GeometricTrajectoryOptimizer::optimize(innerCones, outerCones, base);
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     cout << "Optimization time in us: " << duration.count() << "us\n";
     // test points: {8,46}, {47,31}, {-10, 22}, {40, -30}
-    auto v_prof = opt.getRefSpeed({-10, 22}, 4); // initializing call 
-    v_prof = opt.getRefSpeed({10, -5}, 24); // updating call - current velocity is irrelevant 
+    opt.updateRefSpeed({-10, 22}, 4); // initializing call 
+    auto v_prof = opt.getRefSpeed();
+    opt.updateRefSpeed({10, -5}, 24); // updating call - current velocity is irrelevant 
+    v_prof = opt.getRefSpeed();
     auto pts = opt.getPath();
     for (size_t i = 0; i < pts.size(); i++)
     {
-        v_prof = opt.getRefSpeed(pts.at(i), 4);
+        opt.updateRefSpeed(pts.at(i), 4);
+        v_prof = opt.getRefSpeed();
     }
     opt.plotAll();
     // ofstream alphasFile("alphas.txt");
