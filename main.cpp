@@ -6,6 +6,8 @@
 #include <chrono>
 
 using namespace std;
+using global_planning::GeometricTrajectoryOptimizer;
+using global_planning::Point;
 int main()
 {
     std::cout << "__cplusplus: " << __cplusplus << std::endl;

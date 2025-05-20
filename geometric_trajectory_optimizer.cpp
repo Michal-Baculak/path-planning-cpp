@@ -1,5 +1,8 @@
 #include "geometric_trajectory_optimizer.hpp"
 
+namespace global_planning
+{
+
 Point operator-(const Point &a, const Point &b)
 {
   return {a.x - b.x, a.y - b.y};
@@ -276,7 +279,7 @@ double GeometricTrajectoryOptimizer::linearInterp(const std::vector<double> &t, 
       return v[i] + ratio * (v[i + 1] - v[i]);
     }
   }
-  return v.back(); // TODO: fallback behaviour should either handle the error case or throw an error
+  throw std::runtime_error("Interpolation at \"s = " + std::to_string(s) + "\" is undefined!");
 }
 
 std::vector<std::vector<double>> GeometricTrajectoryOptimizer::parametrizeGradual(
@@ -694,7 +697,6 @@ double GeometricTrajectoryOptimizer::k2ObjectiveFunction(const std::vector<doubl
   for (auto k2 : k2_prof)
     if (!isnan(k2))
       output += k2;
-  // std::cout << "Objective function called! F_val: " << output << std::endl;
   return output;
 }
 double GeometricTrajectoryOptimizer::k2GradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data)
@@ -707,7 +709,6 @@ double GeometricTrajectoryOptimizer::k2GradObjectiveFunction(const std::vector<d
   for (auto k2 : k2_prof)
     if (!isnan(k2))
       output += k2;
-  // std::cout << "Objective function called! F_val: " << output << std::endl;
   return output;
 }
 double GeometricTrajectoryOptimizer::l2ObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data)
@@ -719,7 +720,6 @@ double GeometricTrajectoryOptimizer::l2ObjectiveFunction(const std::vector<doubl
   for (auto l2 : l2_prof)
     if (!isnan(l2))
       output += l2;
-  // std::cout << "Objective function called! F_val: " << output << std::endl;
   return output;
 }
 double GeometricTrajectoryOptimizer::l2GradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data)
@@ -732,7 +732,6 @@ double GeometricTrajectoryOptimizer::l2GradObjectiveFunction(const std::vector<d
   for (auto l2 : l2_prof)
     if (!isnan(l2))
       output += l2;
-  // std::cout << "Objective function called! F_val: " << output << std::endl;
   return output;
 }
 double GeometricTrajectoryOptimizer::lObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data)
@@ -744,7 +743,6 @@ double GeometricTrajectoryOptimizer::lObjectiveFunction(const std::vector<double
   for (auto l : l_prof)
     if (!isnan(l))
       output += l;
-  // std::cout << "Objective function called! F_val: " << output << std::endl;
   return output;
 }
 double GeometricTrajectoryOptimizer::lGradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data)
@@ -757,7 +755,6 @@ double GeometricTrajectoryOptimizer::lGradObjectiveFunction(const std::vector<do
   for (auto l : l_prof)
     if (!isnan(l))
       output += l;
-  // std::cout << "Objective function called! F_val: " << output << std::endl;
   return output;
 }
 double GeometricTrajectoryOptimizer::k2LObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data)
@@ -776,7 +773,6 @@ double GeometricTrajectoryOptimizer::k2LObjectiveFunction(const std::vector<doub
   auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distanceProfile(base, alpha_ref));
   std::string skibidi = "toilet"; // prod by Jakub Maslen
   double output = w * k2 / k2_ref + (1 - w) * l / l_ref;
-  // std::cout << "Objective function called! F_val: " << output << std::endl;
   return output;
 }
 double GeometricTrajectoryOptimizer::k2LGradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data)
@@ -796,7 +792,6 @@ double GeometricTrajectoryOptimizer::k2LGradObjectiveFunction(const std::vector<
   auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distanceProfile(base, alpha_ref));
   std::string skibidi = "toilet"; // prod by Jakub Maslen
   double output = w * k2 / k2_ref + (1 - w) * l / l_ref;
-  // std::cout << "Objective function called! F_val: " << output << std::endl;
   return output;
 }
 double GeometricTrajectoryOptimizer::k2L2GradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data)
@@ -815,7 +810,6 @@ double GeometricTrajectoryOptimizer::k2L2GradObjectiveFunction(const std::vector
   auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2Profile(base, alpha_ref));
   auto l2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2Profile(base, alpha_ref));
   double output = w * k2 / k2_ref + (1 - w) * l2 / l2_ref;
-  // std::cout << "Objective function called! F_val: " << output << std::endl;
   return output;
 }
 std::vector<double> GeometricTrajectoryOptimizer::optimize(const std::vector<Point> &inner_cones, const std::vector<Point> &outer_cones, std::vector<std::vector<double>> &base)
@@ -845,7 +839,6 @@ std::vector<double> GeometricTrajectoryOptimizer::optimize(const std::vector<Poi
 
   //"MaxFunctionEvaluations",10e3, "StepTolerance",1e-20
   opt.set_maxeval(40e3);
-  // std::cout << "setting minimum tolerances: " << numeric_limits<double>::min() << std::endl;
   opt.set_xtol_rel(1e-9);
   opt.set_xtol_abs(1e-12);
 
@@ -857,10 +850,11 @@ std::vector<double> GeometricTrajectoryOptimizer::optimize(const std::vector<Poi
 
   double opt_k2 = 0;
   nlopt::result result = opt.optimize(alphas, opt_k2);
-  if (result >= 1)
-    std::cout << "Optimization successful!" << std::endl;
-  else
-    std::cout << "Optimization failed!" << std::endl;
+  if (result < 1)
+  {
+    alphas.clear();
+    throw std::runtime_error("Optimization failed with NLOPT error code: " + result);
+  }
   return alphas;
 }
 
@@ -975,16 +969,13 @@ bool GeometricTrajectoryOptimizer::updateTrajectory(const std::vector<Point> &in
   {
     if (result == nlopt::MAXTIME_REACHED)
     {
-      std::cout << "Optimization reached time_limit successfuly!" << std::endl;
       return false;
     }
-    std::cout << "Optimization succeeded with code: " << result << std::endl;
     return true;
   }
   else
   {
-    std::cout << "Optimization failed!" << std::endl;
-    return false;
+    throw std::runtime_error("Optimization failed with NLOPT return code: " + result);
   }
 }
 GeometricTrajectoryOptimizer::Config &GeometricTrajectoryOptimizer::getConfig() { return config_; }
@@ -1025,12 +1016,10 @@ void GeometricTrajectoryOptimizer::updateRefSpeed(const Point &pose, double v0)
   }
   if (v_prof_.empty())
   {
-    std::cout << "Reference velocity empty, initializing...\n";
     v_prof.at(i0) = v0;
   }
   else
   {
-    std::cout << "Reference velocity is initialized, extending...\n";
     v_prof.at(i0) = v_prof_.at(i0);
     // NOTE: for v_prof_.at(i0) to be valid, program needs to make sure, that when the track gets reparametrized
     // with increased number of lines, v_prof_ needs to be cleared, and therefore recalculated in the next iteration
@@ -1074,4 +1063,6 @@ const std::vector<double> &GeometricTrajectoryOptimizer::getRefSpeed() const
 void GeometricTrajectoryOptimizer::plotAll()
 {
   plotAll(inner_cones_, outer_cones_, base_, alphas_);
+}
+
 }

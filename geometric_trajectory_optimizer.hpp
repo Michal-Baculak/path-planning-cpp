@@ -4,6 +4,10 @@
 #include <Python.h>
 #include <nlopt.hpp>
 #include <bits/stdc++.h>
+#include <stdexcept>
+
+namespace global_planning
+{
 
 struct Point
 {
@@ -112,3 +116,5 @@ public:
   static double k2LGradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data);
   static double k2L2GradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data);
 };
+
+}
