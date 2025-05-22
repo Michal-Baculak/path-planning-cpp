@@ -1,8 +1,5 @@
-#include <iostream>
 #include "geometric_trajectory_optimizer.hpp"
-#include <sstream>
 #include <string>
-#include <fstream>
 #include <chrono>
 
 using namespace std;
@@ -65,7 +62,7 @@ int main()
     // vector<double> alphas(base.size(), 0.0);
 
     // vector<Point> pts = GeometricTrajectoryOptimizer::getPoints(base, alphas);
-    // auto pts = opt.getPath();
+    // auto pts = opt.getTrajectory();
 
     // ofstream trajFile("trajectory.txt");
     
@@ -107,7 +104,8 @@ int main()
     // base.push_back(base.at(0));
     // auto grad_w = GeometricTrajectoryOptimizer::gradK2L(base, alphas, 0.5);
     GeometricTrajectoryOptimizer opt{};
-    opt.getConfig().objective_function = GeometricTrajectoryOptimizer::k2LGradObjectiveFunction;
+    opt.getConfig().objective_function = GeometricTrajectoryOptimizer::stringToObjectiveFunction("k2LGrad"); //GeometricTrajectoryOptimizer::k2LGradObjectiveFunction;
+    opt.getConfig().nlopt_algorithm = GeometricTrajectoryOptimizer::intToNLOPTAlgorithm(40);
     opt.getConfig().enable_time_limit = true; //0.2s default
     opt.getConfig().time_limit = 0.5; //0.2s default
     opt.getConfig().parametrization_spacing = 4; 
@@ -132,13 +130,14 @@ int main()
     auto v_prof = opt.getRefSpeed();
     opt.updateRefSpeed({10, -5}, 24); // updating call - current velocity is irrelevant 
     v_prof = opt.getRefSpeed();
-    auto pts = opt.getPath();
+    auto pts = opt.getTrajectory();
     for (size_t i = 0; i < pts.size(); i++)
     {
         opt.updateRefSpeed(pts.at(i), 4);
         v_prof = opt.getRefSpeed();
     }
     opt.plotAll();
+    opt.logAll("LogFolder/");
     // ofstream alphasFile("alphas.txt");
     // if(!alphasFile.is_open())
     // {

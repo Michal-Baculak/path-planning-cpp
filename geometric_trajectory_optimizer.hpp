@@ -1,10 +1,13 @@
 #include <iostream>
+#include <sstream>
+#include <fstream>
 #include <cmath>
 #include <limits>
 #include <Python.h>
 #include <nlopt.hpp>
 #include <bits/stdc++.h>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace global_planning
 {
@@ -52,6 +55,8 @@ public:
   };
 
 private:
+  const static std::unordered_map<std::string, nlopt::vfunc> strToVfuncMap;
+
   Config config_;
   VehicleModel vehicle_model_;
 
@@ -99,11 +104,15 @@ public:
   VehicleModel &getVehicleModel();
   void setConfig(const Config &config);
   void setVehicleModel(const VehicleModel &vehicle_model);
-  std::vector<Point> getPath() const;
+  std::vector<Point> getTrajectory() const;
   void updateRefSpeed(const Point &pose, double v0);
   const std::vector<double> &getRefSpeed() const;
   void plotAll();
+  void logAll(std::string folder);
+  double getLapTimeEst();
 
+  static nlopt::algorithm intToNLOPTAlgorithm(int in);
+  static nlopt::vfunc stringToObjectiveFunction(std::string in);
   // objective functions made accessible for config_
   // function signature in compliance with https://nlopt.readthedocs.io/en/latest/NLopt_C-plus-plus_Reference/
   static double k2ObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data);
