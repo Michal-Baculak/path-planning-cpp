@@ -18,7 +18,7 @@ int main()
     else std::cout << "Unknown C++ version" << std::endl;
     
     // Read cone positions from filea
-    ifstream trackFile("track.txt");
+    ifstream trackFile("track_FSI.txt");
     string line;
     float x, y;
     vector<Point> innerCones, outerCones;
@@ -108,9 +108,10 @@ int main()
     opt.getConfig().nlopt_algorithm = GeometricTrajectoryOptimizer::intToNLOPTAlgorithm(40);
     opt.getConfig().enable_time_limit = true; //0.2s default
     opt.getConfig().time_limit = 0.5; //0.2s default
-    opt.getConfig().parametrization_spacing = 4; 
+    opt.getConfig().parametrization_spacing = 3; 
     opt.getConfig().x_tol_rel = 5e-3; 
     opt.getConfig().x_tol_abs = 1e-12; 
+    opt.getConfig().safety_margin = 1; 
 
     // opt.getConfig().objective_function = GeometricTrajectoryOptimizer::k2GradObjectiveFunction;
     auto start = std::chrono::high_resolution_clock::now(); 
@@ -126,10 +127,13 @@ int main()
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     cout << "Optimization time in us: " << duration.count() << "us\n";
     // test points: {8,46}, {47,31}, {-10, 22}, {40, -30}
-    opt.updateRefSpeed({-10, 22}, 4); // initializing call 
+    opt.updateRefSpeed({0,0}, 0); // initializing call 
     auto v_prof = opt.getRefSpeed();
-    opt.updateRefSpeed({10, -5}, 24); // updating call - current velocity is irrelevant 
+    opt.updateRefSpeed({0,0}, 0); // updating call 
     v_prof = opt.getRefSpeed();
+
+    // opt.updateRefSpeed({10, -5}, 24); // updating call - current velocity is irrelevant 
+    // v_prof = opt.getRefSpeed();
     auto pts = opt.getTrajectory();
     for (size_t i = 0; i < pts.size(); i++)
     {

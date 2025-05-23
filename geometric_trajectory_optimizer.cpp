@@ -1014,19 +1014,22 @@ namespace global_planning
         i0 = i;
       }
     }
-    // increment i0 to make sure the starting index is ahead and not behind
-    i0 = (i0 + 1) % alphas_.size();
     std::vector<double> v_prof(alphas_.size(), 4.0);
     // basic constraints - max cornering speed, top speed, steering speed
+    // these need not to consider shifting to be calculated
     for (size_t j = 0; j < alphas_.size(); j++)
     {
-      size_t i = (i0 + j) % alphas_.size();
-      size_t ip1 = (i0 + j + 1) % alphas_.size();
+      size_t i = (j) % alphas_.size();
+      size_t ip1 = (j + 1) % alphas_.size();
       double v_k = sqrt(vehicle_model_.a_lat_max / abs(k_prof.at(i)));
       double dk = abs(k_prof.at(i) - k_prof.at(ip1));
       double v_steering = vehicle_model_.c_steering * d_prof.at(i) / dk;
       v_prof.at(i) = fmin(fmin(v_k, v_steering), vehicle_model_.v_max);
     }
+    
+    // increment i0 to make sure the starting index is ahead and not behind
+    i0 = (i0 + 1) % alphas_.size();
+    size_t lookahead_distance = alphas_.size();
     if (v_prof_.empty())
     {
       v_prof.at(i0) = v0;
@@ -1034,12 +1037,13 @@ namespace global_planning
     else
     {
       v_prof.at(i0) = v_prof_.at(i0);
+      lookahead_distance = alphas_.size() - 2; // recaultulating whole length would affect ref speed directly ahead causing sudden spikes
       // NOTE: for v_prof_.at(i0) to be valid, program needs to make sure, that when the track gets reparametrized
       // with increased number of lines, v_prof_ needs to be cleared, and therefore recalculated in the next iteration
       // instead of being based on existing outdated-parametrization profile (see parametrize)
     }
     // forward pass - consider residual acceleration left in corner for acceleration
-    for (size_t j = 0; j < v_prof.size() - 1; j++)
+    for (size_t j = 0; j < lookahead_distance - 1; j++)
     {
       size_t i = (i0 + j) % alphas_.size();
       size_t ip1 = (i0 + j + 1) % alphas_.size();
@@ -1053,7 +1057,7 @@ namespace global_planning
       v_prof.at(ip1) = fmin(v_prof.at(ip1), v_avail);
     }
     // backward pass - consider braking capabilites to make sure we can manage to brake in time
-    for (size_t j = v_prof.size() - 1; j >= 1; j--)
+    for (size_t j = lookahead_distance - 1; j >= 1; j--)
     {
       size_t i = (i0 + j) % alphas_.size();
       size_t im1 = (i0 + j - 1) % alphas_.size();
