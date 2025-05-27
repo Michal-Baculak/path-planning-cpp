@@ -24,19 +24,18 @@ namespace global_planning
   {
     return (a.x != b.x) || (a.y != b.y);
   }
-  
-  const std::unordered_map<std::string, nlopt::vfunc> GeometricTrajectoryOptimizer::strToVfuncMap = 
-  {
-    {"k2",        k2ObjectiveFunction},
-    {"k2Grad",    k2GradObjectiveFunction},
-    {"l2",        l2ObjectiveFunction},
-    {"l2Grad",    l2GradObjectiveFunction},
-    {"l",         lObjectiveFunction},
-    {"lGrad",     lGradObjectiveFunction},
-    {"k2L",       k2LObjectiveFunction},
-    {"k2LGrad",   k2LGradObjectiveFunction},
-    {"k2L2Grad",  k2L2GradObjectiveFunction}
-  };
+
+  const std::unordered_map<std::string, nlopt::vfunc> GeometricTrajectoryOptimizer::strToVfuncMap =
+      {
+          {"k2", k2ObjectiveFunction},
+          {"k2Grad", k2GradObjectiveFunction},
+          {"l2", l2ObjectiveFunction},
+          {"l2Grad", l2GradObjectiveFunction},
+          {"l", lObjectiveFunction},
+          {"lGrad", lGradObjectiveFunction},
+          {"k2L", k2LObjectiveFunction},
+          {"k2LGrad", k2LGradObjectiveFunction},
+          {"k2L2Grad", k2L2GradObjectiveFunction}};
 
   double GeometricTrajectoryOptimizer::getAngle(const Point &A, const Point &B, const Point &C)
   {
@@ -1001,6 +1000,8 @@ namespace global_planning
     auto k_prof = curvatureProfile(base_, alphas_);
     auto d_prof = distanceProfile(base_, alphas_);
 
+    std::vector<double> v_prof(alphas_.size(), 4.0);
+
     // find the starting index by finding the closest point
     auto pts = getPoints(base_, alphas_);
     double min_dist = distance(pose, pts.at(0));
@@ -1014,34 +1015,45 @@ namespace global_planning
         i0 = i;
       }
     }
-    std::vector<double> v_prof(alphas_.size(), 4.0);
-    // basic constraints - max cornering speed, top speed, steering speed
-    // these need not to consider shifting to be calculated
-    for (size_t j = 0; j < alphas_.size(); j++)
+    size_t i0_p1 = (i0 + 1) % alphas_.size();
+    // cannot evaluate angle if pts.at(i0) == pose, so check that first
+    if (pts.at(i0) == pose || abs(getAngle(pose, pts.at(i0), pts.at(i0_p1))) < M_PI_2)
     {
-      size_t i = (j) % alphas_.size();
-      size_t ip1 = (j + 1) % alphas_.size();
+      // closest point is behind or equal to current position
+      // increment i0 to make sure the starting index is ahead and not behind
+      i0 = i0_p1;
+    }
+    size_t lookahead_distance = alphas_.size();
+    if (!v_prof_.empty())
+    {
+      v_prof = v_prof_;
+      lookahead_distance -= 3; // recalculating whole length would affect ref speed directly ahead causing sudden spikes
+    }
+
+    // basic constraints - max cornering speed, top speed, steering speed
+    for (size_t j = 0; j < lookahead_distance; j++)
+    {
+      size_t i = (i0 + j) % alphas_.size();
+      size_t ip1 = (i0 + j + 1) % alphas_.size();
       double v_k = sqrt(vehicle_model_.a_lat_max / abs(k_prof.at(i)));
       double dk = abs(k_prof.at(i) - k_prof.at(ip1));
       double v_steering = vehicle_model_.c_steering * d_prof.at(i) / dk;
       v_prof.at(i) = fmin(fmin(v_k, v_steering), vehicle_model_.v_max);
     }
-    
-    // increment i0 to make sure the starting index is ahead and not behind
-    i0 = (i0 + 1) % alphas_.size();
-    size_t lookahead_distance = alphas_.size();
+
     if (v_prof_.empty())
     {
-      v_prof.at(i0) = v0;
+      v_prof.at(i0) = sqrt(v0*v0 + 2*vehicle_model_.a_front_max*distance(pose, pts.at(i0)));
     }
     else
     {
       v_prof.at(i0) = v_prof_.at(i0);
-      lookahead_distance = alphas_.size() - 2; // recaultulating whole length would affect ref speed directly ahead causing sudden spikes
       // NOTE: for v_prof_.at(i0) to be valid, program needs to make sure, that when the track gets reparametrized
       // with increased number of lines, v_prof_ needs to be cleared, and therefore recalculated in the next iteration
       // instead of being based on existing outdated-parametrization profile (see parametrize)
     }
+
+    // std::cout << "v0 is set at index " << i0 << ", with value of v0 = " << v_prof.at(i0) << "\n";
     // forward pass - consider residual acceleration left in corner for acceleration
     for (size_t j = 0; j < lookahead_distance - 1; j++)
     {
@@ -1050,9 +1062,9 @@ namespace global_planning
       if (v_prof.at(i) > v_prof.at(ip1))
         continue;
       double a_lat = v_prof.at(i) * v_prof.at(i) * k_prof.at(i);
-      double a_rez = vehicle_model_.a_front_max * sqrt(1 - pow(a_lat / vehicle_model_.a_lat_max, 2));
+      double a_res = vehicle_model_.a_front_max * sqrt(1 - pow(a_lat / vehicle_model_.a_lat_max, 2));
       double a_engine = vehicle_model_.max_power / (v_prof.at(i) * vehicle_model_.mass);
-      double a_avail = fmin(a_rez, a_engine);
+      double a_avail = fmin(a_res, a_engine);
       double v_avail = sqrt(v_prof.at(i) * v_prof.at(i) + 2 * a_avail * d_prof.at(i));
       v_prof.at(ip1) = fmin(v_prof.at(ip1), v_avail);
     }
@@ -1134,8 +1146,9 @@ namespace global_planning
     double t_est = getLapTimeEst();
     double k2 = sum(curvature2Profile(base_, alphas_));
     double d = sum(distanceProfile(base_, alphas_));
-    miscFile << d << "\n" << k2 << "\n" << t_est << "\n";
-
+    miscFile << d << "\n"
+             << k2 << "\n"
+             << t_est << "\n";
 
     trackLeftFile.close();
     trackRightFile.close();
@@ -1149,7 +1162,7 @@ namespace global_planning
   {
     return static_cast<nlopt::algorithm>(in);
   }
-  
+
   nlopt::vfunc GeometricTrajectoryOptimizer::stringToObjectiveFunction(std::string in)
   {
     return GeometricTrajectoryOptimizer::strToVfuncMap.at(in);

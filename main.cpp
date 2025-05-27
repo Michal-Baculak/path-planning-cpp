@@ -112,6 +112,13 @@ int main()
     opt.getConfig().x_tol_rel = 5e-3; 
     opt.getConfig().x_tol_abs = 1e-12; 
     opt.getConfig().safety_margin = 1; 
+    opt.getVehicleModel().a_lat_max = 10;
+    opt.getVehicleModel().a_front_max = 10; 
+    opt.getVehicleModel().a_max_brake = 10; 
+    opt.getVehicleModel().max_power = 70000;
+    opt.getVehicleModel().v_max = 15;
+    opt.getVehicleModel().mass = 270;
+    opt.getVehicleModel().c_steering = 1;
 
     // opt.getConfig().objective_function = GeometricTrajectoryOptimizer::k2GradObjectiveFunction;
     auto start = std::chrono::high_resolution_clock::now(); 
@@ -135,7 +142,7 @@ int main()
     // opt.updateRefSpeed({10, -5}, 24); // updating call - current velocity is irrelevant 
     // v_prof = opt.getRefSpeed();
     auto pts = opt.getTrajectory();
-    for (size_t i = 0; i < pts.size(); i++)
+    for (size_t i = 21; i < pts.size(); i++)
     {
         opt.updateRefSpeed(pts.at(i), 4);
         v_prof = opt.getRefSpeed();
