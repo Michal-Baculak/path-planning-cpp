@@ -74,9 +74,13 @@ private:
   static std::vector<double> angleProfile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
   static std::vector<double> angleProfile(const std::vector<Point> &pts);
   static std::vector<double> distanceProfile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
+  static std::vector<double> distanceProfile(const std::vector<Point> &pts);
   static std::vector<double> distance2Profile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
+  // static std::vector<double> distance2Profile(const std::vector<Point> &pts); // appears to be unrequired
   static std::vector<double> curvatureProfile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
+  static std::vector<double> curvatureProfile(const std::vector<Point> &pts);
   static std::vector<double> curvature2Profile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
+  // static std::vector<double> curvature2Profile(const std::vector<Point> &pts); // unused too
 
   // template <typename T> static T sumstd::vector(const std::vector<T>& vec); //overkill
   static double sum(const std::vector<double> &vec);
@@ -110,6 +114,8 @@ public:
   void plotAll();
   void logAll(std::string folder);
   double getLapTimeEst();
+  void setToMidpath();
+  static std::vector<double> updateRefSpeed(const Point &pose, double v0, const VehicleModel& model, const std::vector<Point>& points, std::vector<double>& v_prof_);
 
   static nlopt::algorithm intToNLOPTAlgorithm(int in);
   static nlopt::vfunc stringToObjectiveFunction(std::string in);

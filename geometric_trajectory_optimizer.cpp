@@ -109,6 +109,24 @@ namespace global_planning
       output.at(i) = distance(pts.at(i), pts.at(i + 1));
     return output;
   }
+  std::vector<double> GeometricTrajectoryOptimizer::distanceProfile(const std::vector<Point> &pts)
+  {
+    std::vector<double> output;
+    if (pts.front() != pts.back())
+    {
+      // open track
+      output = std::vector<double>(pts.size(), 0.0);
+      output.back() = nan("");
+      for (int i = 0; i < output.size() - 1; i++)
+        output.at(i) = distance(pts.at(i), pts.at(i + 1));
+      return output;
+    }
+    // closed track
+    output = std::vector<double>(pts.size() - 1, 0.0);
+    for (int i = 0; i < output.size(); i++)
+      output.at(i) = distance(pts.at(i), pts.at(i + 1));
+    return output;
+  }
   std::vector<double> GeometricTrajectoryOptimizer::distance2Profile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas)
   {
     auto pts = getPoints(base, alphas);
@@ -127,12 +145,22 @@ namespace global_planning
       output.at(i) = pow(pts.at(i).x - pts.at(i + 1).x, 2) + pow(pts.at(i).y - pts.at(i + 1).y, 2);
     return output;
   }
+
   std::vector<double> GeometricTrajectoryOptimizer::curvatureProfile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas)
   {
     auto angle_prof = angleProfile(base, alphas);
     auto dist_prof = distanceProfile(base, alphas);
     std::vector<double> output(alphas.size(), 0.0);
     for (int i = 0; i < alphas.size(); i++)
+      output.at(i) = angle_prof.at(i) / dist_prof.at(i);
+    return output;
+  }
+  std::vector<double> GeometricTrajectoryOptimizer::curvatureProfile(const std::vector<Point> &pts)
+  {
+    auto angle_prof = angleProfile(pts);
+    auto dist_prof = distanceProfile(pts);
+    std::vector<double> output(angle_prof.size(), 0.0);
+    for (int i = 0; i < angle_prof.size(); i++)
       output.at(i) = angle_prof.at(i) / dist_prof.at(i);
     return output;
   }
@@ -1038,7 +1066,8 @@ namespace global_planning
       double v_k = sqrt(vehicle_model_.a_lat_max / abs(k_prof.at(i)));
       double dk = abs(k_prof.at(i) - k_prof.at(ip1));
       double v_steering = vehicle_model_.c_steering * d_prof.at(i) / dk;
-      v_prof.at(i) = fmin(fmin(v_k, v_steering), vehicle_model_.v_max);
+      v_prof.at(i) = fmin(v_k, vehicle_model_.v_max);
+      // v_prof.at(i) = fmin(fmin(v_k, v_steering), vehicle_model_.v_max);
     }
 
     if (v_prof_.empty())
@@ -1166,5 +1195,100 @@ namespace global_planning
   nlopt::vfunc GeometricTrajectoryOptimizer::stringToObjectiveFunction(std::string in)
   {
     return GeometricTrajectoryOptimizer::strToVfuncMap.at(in);
+  }
+  void GeometricTrajectoryOptimizer::setToMidpath()
+  {
+    alphas_ = std::vector<double>(alphas_.size(), 0.5);
+  }
+  std::vector<double> GeometricTrajectoryOptimizer::updateRefSpeed(const Point &pose, double v0, const VehicleModel& vehicle_model, const std::vector<Point>& points, std::vector<double>& v_prof_)
+  {
+    auto points_closed = points;
+    points_closed.push_back(points_closed.at(0));
+    auto k_prof = curvatureProfile(points_closed);
+    auto d_prof = distanceProfile(points_closed);
+
+    std::vector<double> v_prof(k_prof.size(), 4.0);
+
+    // find the starting index by finding the closest point
+    double min_dist = distance(pose, points.at(0));
+    size_t i0 = 0;
+    for (size_t i = 0; i < points.size(); i++)
+    {
+      double d = distance(pose, points.at(i));
+      if (d < min_dist)
+      {
+        min_dist = d;
+        i0 = i;
+      }
+    }
+    size_t i0_p1 = (i0 + 1) % points.size();
+    // cannot evaluate angle if pts.at(i0) == pose, so check that first
+    if (points.at(i0) == pose || abs(getAngle(pose, points.at(i0), points.at(i0_p1))) < M_PI_2)
+    {
+      // closest point is behind or equal to current position
+      // increment i0 to make sure the starting index is ahead and not behind
+      i0 = i0_p1;
+    }
+    size_t lookahead_distance = points.size();
+    if (!v_prof_.empty())
+    {
+      v_prof = v_prof_;
+      lookahead_distance -= 3; // recalculating whole length would affect ref speed directly ahead causing sudden spikes
+    }
+
+    // basic constraints - max cornering speed, top speed, steering speed
+    for (size_t j = 0; j < lookahead_distance; j++)
+    {
+      size_t i = (i0 + j) % points.size();
+      size_t ip1 = (i0 + j + 1) % points.size();
+      double v_k = sqrt(vehicle_model.a_lat_max / abs(k_prof.at(i)));
+      double dk = abs(k_prof.at(i) - k_prof.at(ip1));
+      double v_steering = vehicle_model.c_steering * d_prof.at(i) / dk;
+      v_prof.at(i) = fmin(v_k, vehicle_model.v_max);
+      // v_prof.at(i) = fmin(fmin(v_k, v_steering), vehicle_model_.v_max);
+    }
+
+    if (v_prof_.empty())
+    {
+      v_prof.at(i0) = sqrt(v0*v0 + 2*vehicle_model.a_front_max*distance(pose, points.at(i0)));
+    }
+    else
+    {
+      v_prof.at(i0) = v_prof_.at(i0);
+      // NOTE: for v_prof_.at(i0) to be valid, program needs to make sure, that when the track gets reparametrized
+      // with increased number of lines, v_prof_ needs to be cleared, and therefore recalculated in the next iteration
+      // instead of being based on existing outdated-parametrization profile (see parametrize)
+    }
+
+    // std::cout << "v0 is set at index " << i0 << ", with value of v0 = " << v_prof.at(i0) << "\n";
+    // forward pass - consider residual acceleration left in corner for acceleration
+    for (size_t j = 0; j < lookahead_distance - 1; j++)
+    {
+      size_t i = (i0 + j) % points.size();
+      size_t ip1 = (i0 + j + 1) % points.size();
+      if (v_prof.at(i) > v_prof.at(ip1))
+        continue;
+      double a_lat = v_prof.at(i) * v_prof.at(i) * k_prof.at(i);
+      double a_res = vehicle_model.a_front_max * sqrt(1 - pow(a_lat / vehicle_model.a_lat_max, 2));
+      double a_engine = vehicle_model.max_power / (v_prof.at(i) * vehicle_model.mass);
+      double a_avail = fmin(a_res, a_engine);
+      double v_avail = sqrt(v_prof.at(i) * v_prof.at(i) + 2 * a_avail * d_prof.at(i));
+      v_prof.at(ip1) = fmin(v_prof.at(ip1), v_avail);
+    }
+    // backward pass - consider braking capabilites to make sure we can manage to brake in time
+    for (size_t j = lookahead_distance - 1; j >= 1; j--)
+    {
+      size_t i = (i0 + j) % points.size();
+      size_t im1 = (i0 + j - 1) % points.size();
+      if (v_prof.at(i) > v_prof.at(im1))
+        continue;
+      double cX = 1 / (2 * d_prof.at(im1) * vehicle_model.a_max_brake);
+      double cY = k_prof.at(im1) / vehicle_model.a_lat_max;
+      double v_i = v_prof.at(i);
+      double v_avail = sqrt(
+          (2 * cX * cX * v_i * v_i + sqrt(4 * pow(cX, 4) * pow(v_i, 4) - 4 * (cX * cX + cY * cY) * (cX * cX * pow(v_i, 4) - 1))) / (2 * (cX * cX + cY * cY)));
+      v_prof.at(im1) = fmin(v_prof.at(im1), v_avail);
+    }
+    return v_prof;
   }
 }

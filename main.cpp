@@ -136,6 +136,8 @@ int main()
     // test points: {8,46}, {47,31}, {-10, 22}, {40, -30}
     opt.updateRefSpeed({0,0}, 0); // initializing call 
     auto v_prof = opt.getRefSpeed();
+    std::vector<double> v_prof2;
+    v_prof2 = GeometricTrajectoryOptimizer::updateRefSpeed({0,0},0,opt.getVehicleModel(),opt.getTrajectory(), v_prof2);
     opt.updateRefSpeed({0,0}, 0); // updating call 
     v_prof = opt.getRefSpeed();
 
