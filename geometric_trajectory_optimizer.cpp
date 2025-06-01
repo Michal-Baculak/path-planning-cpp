@@ -1198,7 +1198,10 @@ namespace global_planning
   }
   void GeometricTrajectoryOptimizer::setToMidpath()
   {
-    alphas_ = std::vector<double>(alphas_.size(), 0.5);
+    for (size_t i = 0; i < alphas_.size(); i++)
+    {
+      alphas_.at(i) = 0.5;
+    }
   }
   std::vector<double> GeometricTrajectoryOptimizer::updateRefSpeed(const Point &pose, double v0, const VehicleModel& vehicle_model, const std::vector<Point>& points, std::vector<double>& v_prof_)
   {
@@ -1230,7 +1233,7 @@ namespace global_planning
       i0 = i0_p1;
     }
     size_t lookahead_distance = points.size();
-    if (!v_prof_.empty())
+    if (!v_prof_.empty() && v_prof.size() == v_prof_.size())
     {
       v_prof = v_prof_;
       lookahead_distance -= 3; // recalculating whole length would affect ref speed directly ahead causing sudden spikes
@@ -1248,7 +1251,7 @@ namespace global_planning
       // v_prof.at(i) = fmin(fmin(v_k, v_steering), vehicle_model_.v_max);
     }
 
-    if (v_prof_.empty())
+    if (v_prof_.empty() || v_prof_.size() != v_prof.size())
     {
       v_prof.at(i0) = sqrt(v0*v0 + 2*vehicle_model.a_front_max*distance(pose, points.at(i0)));
     }
