@@ -103,49 +103,50 @@ int main()
     // GeometricTrajectoryOptimizer::plotAll(innerCones,outerCones,base,alphas);
     // base.push_back(base.at(0));
     // auto grad_w = GeometricTrajectoryOptimizer::gradK2L(base, alphas, 0.5);
-    std::ofstream exp_out("LogFolder/experiment.txt");
-    if(!exp_out.is_open())
-    {
-        std::cout << "error opening exp_out file!\n";
-    }
-    for (size_t i = 0; i < 10; i++)
-    {
-        std::cout << "running iteration " << i << "\n";
-        GeometricTrajectoryOptimizer opt{};
-        opt.getConfig().objective_function = GeometricTrajectoryOptimizer::stringToObjectiveFunction("k2LGrad"); //GeometricTrajectoryOptimizer::k2LGradObjectiveFunction;
-        opt.getConfig().nlopt_algorithm = GeometricTrajectoryOptimizer::intToNLOPTAlgorithm(40);
-        opt.getConfig().enable_time_limit = false; //0.2s default
-        opt.getConfig().time_limit = 0.5; //0.2s default
-        opt.getConfig().parametrization_spacing = 3.5; 
-        opt.getConfig().x_tol_rel = 0.000000001; 
-        opt.getConfig().x_tol_abs = 0.000000000001; 
-        opt.getConfig().safety_margin = 1.3; 
-        opt.getVehicleModel().a_lat_max = 10;
-        opt.getVehicleModel().a_front_max = 10; 
-        opt.getVehicleModel().a_max_brake = 10; 
-        opt.getVehicleModel().max_power = 70000;
-        opt.getVehicleModel().v_max = 15;
-        opt.getVehicleModel().mass = 270;
-        opt.getVehicleModel().c_steering = 1;
-    
-        // opt.getConfig().objective_function = GeometricTrajectoryOptimizer::k2GradObjectiveFunction;
-        auto start = std::chrono::high_resolution_clock::now(); 
-        bool result = false;
-        int iteration = 0;
-        while(!result)
-        {
-            // cout << "running " << iteration++ << ". iteration\n"; 
-            result = opt.updateTrajectory(innerCones, outerCones);
-        }
-        // alphas = GeometricTrajectoryOptimizer::optimize(innerCones, outerCones, base);
-        auto stop = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-        cout << "Optimization time in us: " << duration.count() << "\n";
-        exp_out << duration.count() << "\n";
-        // opt.plotAll();
+    // std::ofstream exp_out("LogFolder/experiment.txt");
+    // if(!exp_out.is_open())
+    // {
+    //     std::cout << "error opening exp_out file!\n";
+    // }
+    std::ifstream parametrization_input_file("misc_input.txt");
+    double spacing = 0;
+    parametrization_input_file >> spacing;
+    parametrization_input_file.close();
+    GeometricTrajectoryOptimizer opt{};
+    opt.getConfig().objective_function = GeometricTrajectoryOptimizer::stringToObjectiveFunction("k2LGrad"); //GeometricTrajectoryOptimizer::k2LGradObjectiveFunction;
+    opt.getConfig().nlopt_algorithm = GeometricTrajectoryOptimizer::intToNLOPTAlgorithm(40);
+    opt.getConfig().enable_time_limit = false; //0.2s default
+    opt.getConfig().time_limit = 0.5; //0.2s default
+    opt.getConfig().parametrization_spacing = spacing; 
+    opt.getConfig().x_tol_rel = 0.000000001; 
+    opt.getConfig().x_tol_abs = 0.000000000001; 
+    opt.getConfig().safety_margin = 1.3; 
+    opt.getVehicleModel().a_lat_max = 12.6;
+    opt.getVehicleModel().a_front_max = 17; 
+    opt.getVehicleModel().a_max_brake = 21.8; 
+    opt.getVehicleModel().max_power = 80000;
+    opt.getVehicleModel().v_max = 33.3;
+    opt.getVehicleModel().mass = 190;
+    opt.getVehicleModel().c_steering = 30;
 
+    // opt.getConfig().objective_function = GeometricTrajectoryOptimizer::k2GradObjectiveFunction;
+    auto start = std::chrono::high_resolution_clock::now(); 
+    bool result = false;
+    while(!result)
+    {
+        // cout << "running " << iteration++ << ". iteration\n"; 
+        result = opt.updateTrajectory(innerCones, outerCones);
     }
-    exp_out.close();
+    // alphas = GeometricTrajectoryOptimizer::optimize(innerCones, outerCones, base);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    cout << "Optimization time in us: " << duration.count() << "\n";
+    opt.calcOptimalRefSpeed();
+    cout << "Optimal lap time in seconds: " << opt.getLapTimeEst() << " for spacing " << spacing << ", base lines count: " << opt.getTrajectory().size() << "\n";
+
+    // exp_out << duration.count() << "\n";
+    // opt.plotAll();
+    // exp_out.close();
     // // test points: {8,46}, {47,31}, {-10, 22}, {40, -30}
     // opt.updateRefSpeed({0,0}, 0); // initializing call 
     // auto v_prof = opt.getRefSpeed();

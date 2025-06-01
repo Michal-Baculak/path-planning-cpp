@@ -110,6 +110,7 @@ public:
   void setVehicleModel(const VehicleModel &vehicle_model);
   std::vector<Point> getTrajectory() const;
   void updateRefSpeed(const Point &pose, double v0);
+  void calcOptimalRefSpeed();
   const std::vector<double> &getRefSpeed() const;
   void plotAll();
   void logAll(std::string folder);
