@@ -35,6 +35,7 @@ namespace global_planning
           {"lGrad", lGradObjectiveFunction},
           {"k2L", k2LObjectiveFunction},
           {"k2LGrad", k2LGradObjectiveFunction},
+          {"k2L2", k2L2ObjectiveFunction},
           {"k2L2Grad", k2L2GradObjectiveFunction}};
 
   double GeometricTrajectoryOptimizer::getAngle(const Point &A, const Point &B, const Point &C)
@@ -832,6 +833,23 @@ namespace global_planning
     auto l_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distanceProfile(base, alpha_ref));
     std::string skibidi = "toilet"; // prod by Jakub Maslen
     double output = w * k2 / k2_ref + (1 - w) * l / l_ref;
+    return output;
+  }
+    double GeometricTrajectoryOptimizer::k2L2ObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data)
+  {
+    // w = 0 -> optimize based on length
+    // w = 1 -> optimize based on k2
+    const std::vector<double> alpha_ref(x.size(), 0.5);
+    auto data = static_cast<ObjFunData *>(f_data);
+    auto base = data->base;
+    double w = data->w;
+
+    auto k2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2Profile(base, x));
+    auto l2 = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2Profile(base, x));
+
+    auto k2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::curvature2Profile(base, alpha_ref));
+    auto l2_ref = GeometricTrajectoryOptimizer::sum(GeometricTrajectoryOptimizer::distance2Profile(base, alpha_ref));
+    double output = w * k2 / k2_ref + (1 - w) * l2 / l2_ref;
     return output;
   }
   double GeometricTrajectoryOptimizer::k2L2GradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data)

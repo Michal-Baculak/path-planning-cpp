@@ -130,6 +130,7 @@ public:
   static double lGradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data);
   static double k2LObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data);
   static double k2LGradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data);
+  static double k2L2ObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data);
   static double k2L2GradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data);
 };
 
