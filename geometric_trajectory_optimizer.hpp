@@ -116,6 +116,8 @@ public:
   void logAll(std::string folder);
   double getLapTimeEst();
   void setToMidpath();
+  void logAlphas(std::string file);
+
   static std::vector<double> updateRefSpeed(const Point &pose, double v0, const VehicleModel& model, const std::vector<Point>& points, std::vector<double>& v_prof_);
 
   static nlopt::algorithm intToNLOPTAlgorithm(int in);

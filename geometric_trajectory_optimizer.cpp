@@ -1377,4 +1377,17 @@ namespace global_planning
     }
     return v_prof;
   }
+  void GeometricTrajectoryOptimizer::logAlphas(std::string file)
+  {
+    std::ofstream output_file(file);
+    if(!output_file.is_open())
+    {
+      std::cout << "alphas file not open!" << "\n";
+    }
+    for(auto a:alphas_)
+    {
+      output_file << a << "\n";
+    }
+    output_file.close();
+  }
 }
