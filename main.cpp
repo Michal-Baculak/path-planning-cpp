@@ -71,7 +71,6 @@ int main()
         opt.getVehicleModel().max_power = 80000;
         opt.getVehicleModel().v_max = 33.3;
         opt.getVehicleModel().mass = 190;
-        opt.getVehicleModel().c_steering = 30;
     
         // opt.getConfig().objective_function = GeometricTrajectoryOptimizer::k2GradObjectiveFunction;
         auto start = std::chrono::high_resolution_clock::now(); 
@@ -85,7 +84,6 @@ int main()
         auto stop = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
         cout << "Optimization time in us: " << duration.count() << "\n";
-        opt.calcOptimalRefSpeed();
         cout << "Optimal lap time in seconds: " << opt.getLapTimeEst() << " for k-l weight " << opt.getConfig().k_l_weight << "\n";
         exp_out << opt.getLapTimeEst() << "\n";
     }

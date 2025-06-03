@@ -719,9 +719,7 @@ namespace global_planning
       size_t ip1 = (i0 + j + 1) % alphas_.size();
       double v_k = sqrt(vehicle_model_.a_lat_max / abs(k_prof.at(i)));
       double dk = abs(k_prof.at(i) - k_prof.at(ip1));
-      double v_steering = vehicle_model_.c_steering * d_prof.at(i) / dk;
       v_prof.at(i) = fmin(v_k, vehicle_model_.v_max);
-      // v_prof.at(i) = fmin(fmin(v_k, v_steering), vehicle_model_.v_max);
     }
 
     if (v_prof_.empty())
@@ -739,72 +737,6 @@ namespace global_planning
       // instead of being based on existing outdated-parametrization profile (see parametrize)
     }
 
-    // std::cout << "v0 is set at index " << i0 << ", with value of v0 = " << v_prof.at(i0) << "\n";
-    // forward pass - consider residual acceleration left in corner for acceleration
-    for (size_t j = 0; j < lookahead_distance - 1; j++)
-    {
-      size_t i = (i0 + j) % alphas_.size();
-      size_t ip1 = (i0 + j + 1) % alphas_.size();
-      if (v_prof.at(i) > v_prof.at(ip1))
-        continue;
-      double a_lat = v_prof.at(i) * v_prof.at(i) * k_prof.at(i);
-      double a_res = vehicle_model_.a_front_max * sqrt(1 - pow(a_lat / vehicle_model_.a_lat_max, 2));
-      double a_engine = vehicle_model_.max_power / (v_prof.at(i) * vehicle_model_.mass);
-      double a_avail = fmin(a_res, a_engine);
-      double v_avail = sqrt(v_prof.at(i) * v_prof.at(i) + 2 * a_avail * d_prof.at(i));
-      v_prof.at(ip1) = fmin(v_prof.at(ip1), v_avail);
-    }
-    // backward pass - consider braking capabilites to make sure we can manage to brake in time
-    for (size_t j = lookahead_distance - 1; j >= 1; j--)
-    {
-      size_t i = (i0 + j) % alphas_.size();
-      size_t im1 = (i0 + j - 1) % alphas_.size();
-      if (v_prof.at(i) > v_prof.at(im1))
-        continue;
-      double cX = 1 / (2 * d_prof.at(im1) * vehicle_model_.a_max_brake);
-      double cY = k_prof.at(im1) / vehicle_model_.a_lat_max;
-      double v_i = v_prof.at(i);
-      double v_avail = sqrt(
-          (2 * cX * cX * v_i * v_i + sqrt(4 * pow(cX, 4) * pow(v_i, 4) - 4 * (cX * cX + cY * cY) * (cX * cX * pow(v_i, 4) - 1))) / (2 * (cX * cX + cY * cY)));
-      v_prof.at(im1) = fmin(v_prof.at(im1), v_avail);
-    }
-    v_prof_ = v_prof;
-  }
-  void GeometricTrajectoryOptimizer::calcOptimalRefSpeed()
-  {
-    auto k_prof = curvatureProfile(base_, alphas_);
-    auto d_prof = distanceProfile(base_, alphas_);
-
-    std::vector<double> v_prof(alphas_.size(), 4.0);
-
-    // find the starting index by finding the closest point
-    auto pts = getPoints(base_, alphas_);
-
-    size_t lookahead_distance = alphas_.size();
-
-    // basic constraints - max cornering speed, top speed, steering speed
-    for (size_t j = 0; j < lookahead_distance; j++)
-    {
-      size_t i = (j) % alphas_.size();
-      size_t ip1 = (j + 1) % alphas_.size();
-      double v_k = sqrt(vehicle_model_.a_lat_max / abs(k_prof.at(i)));
-      double dk = abs(k_prof.at(i) - k_prof.at(ip1));
-      double v_steering = vehicle_model_.c_steering * d_prof.at(i) / dk;
-      v_prof.at(i) = fmin(v_k, vehicle_model_.v_max);
-      // v_prof.at(i) = fmin(fmin(v_k, v_steering), vehicle_model_.v_max);
-    }
-
-    size_t i0 = 0;
-    double min_vel = v_prof.at(0);
-    for (size_t i = 0; i < alphas_.size(); i++)
-    {
-      if(v_prof.at(i) < min_vel)
-      {
-        min_vel = v_prof.at(i);
-        i0 = i;
-      }
-    }
-    // std::cout << "v0 is set at index " << i0 << ", with value of v0 = " << v_prof.at(i0) << "\n";
     // forward pass - consider residual acceleration left in corner for acceleration
     for (size_t j = 0; j < lookahead_distance - 1; j++)
     {

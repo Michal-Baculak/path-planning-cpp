@@ -51,7 +51,6 @@ public:
     double max_power = 100e3;
     double v_max = 33.3;
     double mass = 270;
-    double c_steering = 1;
   };
 
 private:
@@ -82,7 +81,6 @@ private:
   static std::vector<double> curvature2Profile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
   // static std::vector<double> curvature2Profile(const std::vector<Point> &pts); // unrequired too
   
-  // template <typename T> static T sumstd::vector(const std::vector<T>& vec); //overkill
   static double sum(const std::vector<double> &vec);
 
   static std::vector<double> gradK2(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
@@ -103,7 +101,6 @@ public:
   void setVehicleModel(const VehicleModel &vehicle_model);
   std::vector<Point> getTrajectory() const;
   void updateRefSpeed(const Point &pose, double v0);
-  void calcOptimalRefSpeed();
   const std::vector<double> &getRefSpeed() const;
   double getLapTimeEst();
   void setToMidpath();
