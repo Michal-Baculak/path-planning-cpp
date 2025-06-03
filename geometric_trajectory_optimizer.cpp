@@ -726,7 +726,10 @@ namespace global_planning
 
     if (v_prof_.empty())
     {
-      v_prof.at(i0) = sqrt(v0*v0 + 2*vehicle_model_.a_front_max*distance(pose, pts.at(i0)));
+      // calculate first ref speed considering available acceleration
+      double a_lat = v0*v0*k_prof.at(i0);
+      double a_res = vehicle_model_.a_front_max * sqrt(1 - pow(a_lat / vehicle_model_.a_lat_max, 2));
+      v_prof.at(i0) = sqrt(v0*v0 + 2*a_res*distance(pose, pts.at(i0)));
     }
     else
     {
