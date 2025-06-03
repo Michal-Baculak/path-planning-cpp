@@ -1025,10 +1025,10 @@ namespace global_planning
     nlopt::result result = opt.optimize(alphas_, opt_k2);
     if (result >= 1)
     {
-      if (result == nlopt::MAXTIME_REACHED)
-      {
-        return false;
-      }
+      // if (result == nlopt::MAXTIME_REACHED)
+      // {
+      //   return false;
+      // }
       return true;
     }
     else
