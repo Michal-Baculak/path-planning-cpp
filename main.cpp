@@ -88,8 +88,6 @@ int main()
         opt.calcOptimalRefSpeed();
         cout << "Optimal lap time in seconds: " << opt.getLapTimeEst() << " for k-l weight " << opt.getConfig().k_l_weight << "\n";
         exp_out << opt.getLapTimeEst() << "\n";
-        opt.logAlphas("LogFolder/alphas" + std::to_string(i) + ".txt");
-        opt.plotAll();
     }
     
     

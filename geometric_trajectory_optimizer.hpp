@@ -69,7 +69,6 @@ private:
   static double distance(const Point &a, const Point &b);
   static double linearInterp(const std::vector<double> &t, const std::vector<double> &v, double s);
   static bool crossesBetween(const Point &A, const Point &B, const Point &origin, const Point &direction, Point *intersection);
-  static std::vector<std::vector<double>> parametrize(const std::vector<Point> &inner_cones, const std::vector<Point> &outer_cones, int resolution);
   static std::vector<std::vector<double>> parametrizeGradual(std::vector<Point> inner_cones, std::vector<Point> outer_cones, double ds);
   static std::vector<double> angleProfile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
   static std::vector<double> angleProfile(const std::vector<Point> &pts);
@@ -93,12 +92,6 @@ private:
 
   static std::vector<Point> getPoints(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
   static double getAngle(const Point &A, const Point &B, const Point &C);
-  static void plotDemo(const std::vector<double> &x, const std::vector<double> &y);
-  static void plotAll(
-      const std::vector<Point> &inner_cones,
-      const std::vector<Point> &outer_cones,
-      const std::vector<std::vector<double>> &base,
-      const std::vector<double> &alphas);
   static std::vector<double> optimize(const std::vector<Point> &inner_cones, const std::vector<Point> &outer_cones, std::vector<std::vector<double>> &base);
   static std::pair<std::vector<Point>, std::vector<Point>> safetyMargin(const std::vector<Point> &inner, const std::vector<Point> &outer, double margin);
 
@@ -112,13 +105,8 @@ public:
   void updateRefSpeed(const Point &pose, double v0);
   void calcOptimalRefSpeed();
   const std::vector<double> &getRefSpeed() const;
-  void plotAll();
-  void logAll(std::string folder);
   double getLapTimeEst();
   void setToMidpath();
-  void logAlphas(std::string file);
-
-  static std::vector<double> updateRefSpeed(const Point &pose, double v0, const VehicleModel& model, const std::vector<Point>& points, std::vector<double>& v_prof_);
 
   static nlopt::algorithm intToNLOPTAlgorithm(int in);
   static nlopt::vfunc stringToObjectiveFunction(std::string in);
