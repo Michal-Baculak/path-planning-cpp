@@ -55,16 +55,6 @@ namespace global_planning
   {
     auto pts = getPoints(base, alphas);
     std::vector<double> output(alphas.size(), 0.0);
-    if (base.front() != base.back())
-    {
-      // open track (unconnected)
-      output.at(0) = output.back() = nan("");
-      for (int i = 1; i < alphas.size() - 1; i++)
-        output.at(i) = getAngle(pts.at(i - 1), pts.at(i), pts.at(i + 1));
-      return output;
-    }
-
-    // closed track
     pts.insert(pts.begin(), pts.back());
     pts.push_back(pts.at(1));
     for (int i = 1; i < alphas.size() + 1; i++)
@@ -74,19 +64,9 @@ namespace global_planning
   std::vector<double> GeometricTrajectoryOptimizer::angleProfile(const std::vector<Point> &pts)
   {
     std::vector<double> output;
-    if (pts.front() != pts.back())
-    {
-      // open track (unconnected)
-      output = std::vector<double>(pts.size(), 0.0);
-      output.at(0) = output.back() = nan("");
-      for (int i = 1; i < pts.size() - 1; i++)
-        output.at(i) = getAngle(pts.at(i - 1), pts.at(i), pts.at(i + 1));
-      return output;
-    }
-
-    // closed track
     auto _pts = pts;
     output = std::vector<double>(_pts.size() - 1, 0.0);
+    _pts.push_back(_pts.at(0));
     _pts.insert(_pts.begin(), _pts.at(_pts.size() - 2));
     for (int i = 1; i < output.size() + 1; i++)
       output.at(i - 1) = getAngle(_pts.at(i - 1), _pts.at(i), _pts.at(i + 1));
@@ -96,15 +76,6 @@ namespace global_planning
   {
     auto pts = getPoints(base, alphas);
     std::vector<double> output(alphas.size(), 0.0);
-    if (base.front() != base.back())
-    {
-      // open track
-      output.back() = nan("");
-      for (int i = 0; i < alphas.size() - 1; i++)
-        output.at(i) = distance(pts.at(i), pts.at(i + 1));
-      return output;
-    }
-    // closed track
     pts.push_back(pts.front());
     for (int i = 0; i < alphas.size(); i++)
       output.at(i) = distance(pts.at(i), pts.at(i + 1));
@@ -113,34 +84,17 @@ namespace global_planning
   std::vector<double> GeometricTrajectoryOptimizer::distanceProfile(const std::vector<Point> &pts)
   {
     std::vector<double> output;
-    if (pts.front() != pts.back())
-    {
-      // open track
-      output = std::vector<double>(pts.size(), 0.0);
-      output.back() = nan("");
-      for (int i = 0; i < output.size() - 1; i++)
-        output.at(i) = distance(pts.at(i), pts.at(i + 1));
-      return output;
-    }
-    // closed track
-    output = std::vector<double>(pts.size() - 1, 0.0);
+    auto _pts = pts;
+    _pts.push_back(_pts.at(0));
+    output = std::vector<double>(pts.size(), 0.0);
     for (int i = 0; i < output.size(); i++)
-      output.at(i) = distance(pts.at(i), pts.at(i + 1));
+      output.at(i) = distance(_pts.at(i), _pts.at(i + 1));
     return output;
   }
   std::vector<double> GeometricTrajectoryOptimizer::distance2Profile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas)
   {
     auto pts = getPoints(base, alphas);
     std::vector<double> output(alphas.size(), 0.0);
-    if (base.front() != base.back())
-    {
-      // open track
-      output.back() = nan("");
-      for (int i = 0; i < alphas.size() - 1; i++)
-        output.at(i) = pow(pts.at(i).x - pts.at(i + 1).x, 2) + pow(pts.at(i).y - pts.at(i + 1).y, 2); // distance(pts.at(i), pts.at(i+1));
-      return output;
-    }
-    // closed track
     pts.push_back(pts.front());
     for (int i = 0; i < alphas.size(); i++)
       output.at(i) = pow(pts.at(i).x - pts.at(i + 1).x, 2) + pow(pts.at(i).y - pts.at(i + 1).y, 2);
@@ -326,8 +280,7 @@ namespace global_planning
   std::vector<std::vector<double>> GeometricTrajectoryOptimizer::parametrizeGradual(
       std::vector<Point> inner_cones,
       std::vector<Point> outer_cones,
-      double ds,
-      bool is_closed)
+      double ds)
   {
     std::vector<std::vector<double>> base;
 
@@ -337,79 +290,42 @@ namespace global_planning
     double total_length = 0.0;
     std::vector<Point> cones;
 
-    if (is_closed)
+    outer_cones.push_back(outer_cones.front());
+
+    cones.push_back(inner_cones.back());
+    cones.insert(cones.end(), inner_cones.begin(), inner_cones.end());
+    cones.push_back(inner_cones.front());
+    cones.push_back(inner_cones[1]);
+
+    for (size_t i = 0; i < inner_cones.size(); ++i)
     {
-      outer_cones.push_back(outer_cones.front());
-
-      cones.push_back(inner_cones.back());
-      cones.insert(cones.end(), inner_cones.begin(), inner_cones.end());
-      cones.push_back(inner_cones.front());
-      cones.push_back(inner_cones[1]);
-
-      for (size_t i = 0; i < inner_cones.size(); ++i)
-      {
-        t_orig.push_back(total_length);
-        origins_x.push_back(cones[i + 1].x);
-        origins_y.push_back(cones[i + 1].y);
-        total_length += distance(cones[i + 1], cones[i + 2]);
-      }
-
       t_orig.push_back(total_length);
-      origins_x.push_back(cones[1].x);
-      origins_y.push_back(cones[1].y);
-
-      double s = 0;
-      for (size_t i = 0; i < inner_cones.size() + 2; ++i)
-      {
-        double dx = cones[i + 1].x - cones[i].x;
-        double dy = cones[i + 1].y - cones[i].y;
-        double dist = distance(cones[i + 1], cones[i]);
-        s += dist;
-
-        t_dir.push_back(s - dist / 2);
-        dir_x.push_back(-dy);
-        dir_y.push_back(dx);
-      }
-      // t_dir[0] -= distance(cones[1], cones[2]); //THIS IS WRONG LOOKIN
-      // This should do the trick
-      double offset = distance(cones[0], cones[1]);
-      for (double &t : t_dir)
-        t -= offset;
+      origins_x.push_back(cones[i + 1].x);
+      origins_y.push_back(cones[i + 1].y);
+      total_length += distance(cones[i + 1], cones[i + 2]);
     }
-    else
+
+    t_orig.push_back(total_length);
+    origins_x.push_back(cones[1].x);
+    origins_y.push_back(cones[1].y);
+
+    double s = 0;
+    for (size_t i = 0; i < inner_cones.size() + 2; ++i)
     {
-      // This part is not unit tested, run tests first before using
-      cones = inner_cones;
-      for (size_t i = 0; i < cones.size() - 1; ++i)
-      {
-        t_orig.push_back(total_length);
-        origins_x.push_back(cones[i].x);
-        origins_y.push_back(cones[i].y);
-        total_length += distance(cones[i], cones[i + 1]);
-      }
-      t_orig.push_back(total_length);
-      origins_x.push_back(cones.back().x);
-      origins_y.push_back(cones.back().y);
+      double dx = cones[i + 1].x - cones[i].x;
+      double dy = cones[i + 1].y - cones[i].y;
+      double dist = distance(cones[i + 1], cones[i]);
+      s += dist;
 
-      double s = 0;
-      for (size_t i = 0; i < cones.size() - 1; ++i)
-      {
-        double dx = cones[i + 1].x - cones[i].x;
-        double dy = cones[i + 1].y - cones[i].y;
-        double dist = distance(cones[i + 1], cones[i]);
-        s += dist;
-        t_dir.push_back(s - dist / 2);
-        dir_x.push_back(-dy);
-        dir_y.push_back(dx);
-      }
-
-      t_dir.insert(t_dir.begin(), 0);
-      t_dir.push_back(total_length);
-      dir_x.insert(dir_x.begin(), dir_x.front());
-      dir_x.push_back(dir_x.back());
-      dir_y.insert(dir_y.begin(), dir_y.front());
-      dir_y.push_back(dir_y.back());
+      t_dir.push_back(s - dist / 2);
+      dir_x.push_back(-dy);
+      dir_y.push_back(dx);
     }
+    // t_dir[0] -= distance(cones[1], cones[2]); //THIS IS WRONG LOOKIN
+    // This should do the trick
+    double offset = distance(cones[0], cones[1]);
+    for (double &t : t_dir)
+      t -= offset;
 
     for (double s = 0; s <= total_length; s += ds)
     {
@@ -587,11 +503,6 @@ namespace global_planning
   std::vector<double> GeometricTrajectoryOptimizer::gradL2(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas)
   {
     std::vector<double> grad(alphas.size(), 0.0);
-    if (base.front() != base.back())
-    {
-      return grad;
-      std::cerr << "Open track gradient calculation is not yet supported!" << std::endl;
-    }
     auto pts = getPoints(base, alphas);
     // add last element to the front and first element to the back
     pts.insert(pts.begin(), pts.back());
@@ -621,11 +532,6 @@ namespace global_planning
   std::vector<double> GeometricTrajectoryOptimizer::gradK2(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas)
   {
     std::vector<double> grad(alphas.size(), 0.0);
-    if (base.front() != base.back())
-    {
-      return grad;
-      std::cerr << "Open track gradient calculation is not yet supported!" << std::endl;
-    }
     auto pts = getPoints(base, alphas);
     auto angles = angleProfile(base, alphas);
     // add last element to the front and first element to the back
@@ -662,11 +568,6 @@ namespace global_planning
   std::vector<double> GeometricTrajectoryOptimizer::gradL(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas)
   {
     std::vector<double> grad(alphas.size(), 0.0);
-    if (base.front() != base.back())
-    {
-      return grad;
-      std::cerr << "Open track gradient calculation is not yet supported!" << std::endl;
-    }
     auto pts = getPoints(base, alphas);
     // add last element to the front and first element to the back
     pts.insert(pts.begin(), pts.back());
@@ -691,11 +592,7 @@ namespace global_planning
     // w = 0 -> optimize based on length
     // w = 1 -> optimize based on k2
     std::vector<double> grad(alphas.size(), 0.0);
-    if (base.front() != base.back())
-    {
-      return grad;
-      std::cerr << "Open track gradient calculation is not yet supported!" << std::endl;
-    }
+
     auto g_k2 = gradK2(base, alphas);
     auto g_l = gradL(base, alphas);
 
@@ -712,11 +609,7 @@ namespace global_planning
     // w = 0 -> optimize based on length2
     // w = 1 -> optimize based on k2
     std::vector<double> grad(alphas.size(), 0.0);
-    if (base.front() != base.back())
-    {
-      return grad;
-      std::cerr << "Open track gradient calculation is not yet supported!" << std::endl;
-    }
+
     auto g_k2 = gradK2(base, alphas);
     auto g_l2 = gradL2(base, alphas);
 
@@ -870,51 +763,6 @@ namespace global_planning
     double output = w * k2 / k2_ref + (1 - w) * l2 / l2_ref;
     return output;
   }
-  std::vector<double> GeometricTrajectoryOptimizer::optimize(const std::vector<Point> &inner_cones, const std::vector<Point> &outer_cones, std::vector<std::vector<double>> &base)
-  {
-    // https://nlopt.readthedocs.io/en/latest/NLopt_Reference/
-
-    auto [inner, outer] = safetyMargin(inner_cones, outer_cones, 1.5);
-    // base = GeometricTrajectoryOptimizer::parametrize(inner,outer, 100);
-    base = GeometricTrajectoryOptimizer::parametrizeGradual(inner, outer, 3, true);
-    // base = GeometricTrajectoryOptimizer::parametrize(inner_cones,outer_cones, 100);
-
-    // some setups have varying results based on initial guess, 1.0 seems to be better for w_k2_l_grad OF (f.e.)
-    std::vector<double> alphas(base.size(), 1.0);
-
-    base.push_back(base.at(0));
-    // nlopt::opt opt(nlopt::LN_BOBYQA, alphas.size());
-    nlopt::opt opt(nlopt::LD_SLSQP, alphas.size());
-
-    // LN_BOBYQA - perfect for gradient-free optimization
-    // LD_TNEWTON - perfect for l and l2, lacks in k2
-    // LD_SLSQP - okay for l and l2, perfect for k2
-    // LD_LBFGS - perfect for w
-    opt.set_min_objective(k2LGradObjectiveFunction, static_cast<void *>(&base));
-
-    opt.set_lower_bounds(0.0);
-    opt.set_upper_bounds(1.0);
-
-    //"MaxFunctionEvaluations",10e3, "StepTolerance",1e-20
-    opt.set_maxeval(40e3);
-    opt.set_xtol_rel(1e-9);
-    opt.set_xtol_abs(1e-12);
-
-    // much shorter than needed on purpose
-    //  opt.set_maxtime(0.2);
-
-    // opt.set_ftol_abs(1e-24);
-    // opt.set_ftol_rel(1e-18);
-
-    double opt_k2 = 0;
-    nlopt::result result = opt.optimize(alphas, opt_k2);
-    if (result < 1)
-    {
-      alphas.clear();
-      throw std::runtime_error("Optimization failed with NLOPT error code: " + result);
-    }
-    return alphas;
-  }
 
   Point line_intersect(const Point &A1, const Point &A2, const Point &B1, const Point &B2)
   {
@@ -985,7 +833,7 @@ namespace global_planning
     inner_cones_ = inner_cones;
     outer_cones_ = outer_cones;
     auto [inner, outer] = safetyMargin(inner_cones, outer_cones, config_.safety_margin);
-    base_ = GeometricTrajectoryOptimizer::parametrizeGradual(inner, outer, config_.parametrization_spacing, true);
+    base_ = GeometricTrajectoryOptimizer::parametrizeGradual(inner, outer, config_.parametrization_spacing);
 
     // if parametrization adds and extra line, or this is the first run, initialize alphas
     // otherwise last iteration's alphas are used as a starting point for current optimization
@@ -995,8 +843,6 @@ namespace global_planning
       alphas_ = std::vector<double>(base_.size(), 0.5);
       v_prof_.clear();
     }
-    // close the track (only mode implemented)
-    base_.push_back(base_.at(0));
 
     nlopt::opt opt(config_.nlopt_algorithm, alphas_.size());
     ObjFunData data{};
@@ -1021,8 +867,8 @@ namespace global_planning
     if (config_.enable_time_limit)
       opt.set_maxtime(config_.time_limit);
 
-    double opt_k2 = 0;
-    nlopt::result result = opt.optimize(alphas_, opt_k2);
+    double opt_val = 0;
+    nlopt::result result = opt.optimize(alphas_, opt_val);
     if (result >= 1)
     {
       // if (result == nlopt::MAXTIME_REACHED)
@@ -1288,10 +1134,8 @@ namespace global_planning
   }
   std::vector<double> GeometricTrajectoryOptimizer::updateRefSpeed(const Point &pose, double v0, const VehicleModel& vehicle_model, const std::vector<Point>& points, std::vector<double>& v_prof_)
   {
-    auto points_closed = points;
-    points_closed.push_back(points_closed.at(0));
-    auto k_prof = curvatureProfile(points_closed);
-    auto d_prof = distanceProfile(points_closed);
+    auto k_prof = curvatureProfile(points);
+    auto d_prof = distanceProfile(points);
 
     std::vector<double> v_prof(k_prof.size(), 4.0);
 

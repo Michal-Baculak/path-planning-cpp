@@ -70,7 +70,7 @@ private:
   static double linearInterp(const std::vector<double> &t, const std::vector<double> &v, double s);
   static bool crossesBetween(const Point &A, const Point &B, const Point &origin, const Point &direction, Point *intersection);
   static std::vector<std::vector<double>> parametrize(const std::vector<Point> &inner_cones, const std::vector<Point> &outer_cones, int resolution);
-  static std::vector<std::vector<double>> parametrizeGradual(std::vector<Point> inner_cones, std::vector<Point> outer_cones, double ds, bool is_closed);
+  static std::vector<std::vector<double>> parametrizeGradual(std::vector<Point> inner_cones, std::vector<Point> outer_cones, double ds);
   static std::vector<double> angleProfile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
   static std::vector<double> angleProfile(const std::vector<Point> &pts);
   static std::vector<double> distanceProfile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
