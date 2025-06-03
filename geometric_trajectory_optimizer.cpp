@@ -619,7 +619,10 @@ namespace global_planning
   {
     inner_cones_ = inner_cones;
     outer_cones_ = outer_cones;
-    auto [inner, outer] = safetyMargin(inner_cones, outer_cones, config_.safety_margin);
+
+    auto track_margined = safetyMargin(inner_cones, outer_cones, config_.safety_margin);
+    auto inner = track_margined.first;
+    auto outer = track_margined.second;
     base_ = GeometricTrajectoryOptimizer::parametrizeGradual(inner, outer, config_.parametrization_spacing);
 
     // if parametrization adds and extra line, or this is the first run, initialize alphas
@@ -658,10 +661,10 @@ namespace global_planning
     nlopt::result result = opt.optimize(alphas_, opt_val);
     if (result >= 1)
     {
-      // if (result == nlopt::MAXTIME_REACHED)
-      // {
-      //   return false;
-      // }
+      if (result == nlopt::MAXTIME_REACHED)
+      {
+        return false;
+      }
       return true;
     }
     else

@@ -66,6 +66,7 @@ private:
   std::vector<double> alphas_;
   std::vector<double> v_prof_;
 
+  // Geometry functions. Need to be static because they are being called from an also static objective function
   static double distance(const Point &a, const Point &b);
   static double linearInterp(const std::vector<double> &t, const std::vector<double> &v, double s);
   static bool crossesBetween(const Point &A, const Point &B, const Point &origin, const Point &direction, Point *intersection);
@@ -79,8 +80,8 @@ private:
   static std::vector<double> curvatureProfile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
   static std::vector<double> curvatureProfile(const std::vector<Point> &pts);
   static std::vector<double> curvature2Profile(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
-  // static std::vector<double> curvature2Profile(const std::vector<Point> &pts); // unused too
-
+  // static std::vector<double> curvature2Profile(const std::vector<Point> &pts); // unrequired too
+  
   // template <typename T> static T sumstd::vector(const std::vector<T>& vec); //overkill
   static double sum(const std::vector<double> &vec);
 
@@ -92,7 +93,6 @@ private:
 
   static std::vector<Point> getPoints(const std::vector<std::vector<double>> &base, const std::vector<double> &alphas);
   static double getAngle(const Point &A, const Point &B, const Point &C);
-  static std::vector<double> optimize(const std::vector<Point> &inner_cones, const std::vector<Point> &outer_cones, std::vector<std::vector<double>> &base);
   static std::pair<std::vector<Point>, std::vector<Point>> safetyMargin(const std::vector<Point> &inner, const std::vector<Point> &outer, double margin);
 
 public:
@@ -110,7 +110,8 @@ public:
 
   static nlopt::algorithm intToNLOPTAlgorithm(int in);
   static nlopt::vfunc stringToObjectiveFunction(std::string in);
-  // objective functions made accessible for config_
+  // objective functions made public for config_ object
+  // OFs need not to be member functions of a class, therefore we declare them `static`
   // function signature in compliance with https://nlopt.readthedocs.io/en/latest/NLopt_C-plus-plus_Reference/
   static double k2ObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data);
   static double k2GradObjectiveFunction(const std::vector<double> &x, std::vector<double> &grad, void *f_data);
