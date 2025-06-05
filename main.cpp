@@ -67,8 +67,8 @@ int main()
     
         opt.getVehicleModel().a_lat_max = 12.6;
         opt.getVehicleModel().a_front_max = 17; 
-        opt.getVehicleModel().a_max_brake = 21.8; 
-        opt.getVehicleModel().max_power = 80000;
+        opt.getVehicleModel().a_brake_max = 21.8; 
+        opt.getVehicleModel().power_max = 80000;
         opt.getVehicleModel().v_max = 33.3;
         opt.getVehicleModel().mass = 190;
     

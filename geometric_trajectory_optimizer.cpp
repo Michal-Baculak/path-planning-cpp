@@ -230,8 +230,7 @@ namespace global_planning
       dir_x.push_back(-dy);
       dir_y.push_back(dx);
     }
-    // t_dir[0] -= distance(cones[1], cones[2]); //THIS IS WRONG LOOKIN
-    // This should do the trick
+
     double offset = distance(cones[0], cones[1]);
     for (double &t : t_dir)
       t -= offset;
@@ -617,9 +616,6 @@ namespace global_planning
 
   bool GeometricTrajectoryOptimizer::updateTrajectory(const std::vector<Point> &inner_cones, const std::vector<Point> &outer_cones)
   {
-    inner_cones_ = inner_cones;
-    outer_cones_ = outer_cones;
-
     auto track_margined = safetyMargin(inner_cones, outer_cones, config_.safety_margin);
     auto inner = track_margined.first;
     auto outer = track_margined.second;
@@ -727,7 +723,9 @@ namespace global_planning
       // calculate first ref speed considering available acceleration
       double a_lat = v0*v0*k_prof.at(i0);
       double a_res = vehicle_model_.a_front_max * sqrt(1 - pow(a_lat / vehicle_model_.a_lat_max, 2));
-      v_prof.at(i0) = sqrt(v0*v0 + 2*a_res*distance(pose, pts.at(i0)));
+      double a_engine = vehicle_model_.power_max / (v0 * vehicle_model_.mass);
+      double a_avail = fmin(a_res, a_engine);
+      v_prof.at(i0) = sqrt(v0*v0 + 2*a_avail*distance(pose, pts.at(i0)));
     }
     else
     {
@@ -746,7 +744,7 @@ namespace global_planning
         continue;
       double a_lat = v_prof.at(i) * v_prof.at(i) * k_prof.at(i);
       double a_res = vehicle_model_.a_front_max * sqrt(1 - pow(a_lat / vehicle_model_.a_lat_max, 2));
-      double a_engine = vehicle_model_.max_power / (v_prof.at(i) * vehicle_model_.mass);
+      double a_engine = vehicle_model_.power_max / (v_prof.at(i) * vehicle_model_.mass);
       double a_avail = fmin(a_res, a_engine);
       double v_avail = sqrt(v_prof.at(i) * v_prof.at(i) + 2 * a_avail * d_prof.at(i));
       v_prof.at(ip1) = fmin(v_prof.at(ip1), v_avail);
@@ -758,7 +756,7 @@ namespace global_planning
       size_t im1 = (i0 + j - 1) % alphas_.size();
       if (v_prof.at(i) > v_prof.at(im1))
         continue;
-      double cX = 1 / (2 * d_prof.at(im1) * vehicle_model_.a_max_brake);
+      double cX = 1 / (2 * d_prof.at(im1) * vehicle_model_.a_brake_max);
       double cY = k_prof.at(im1) / vehicle_model_.a_lat_max;
       double v_i = v_prof.at(i);
       double v_avail = sqrt(

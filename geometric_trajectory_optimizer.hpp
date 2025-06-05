@@ -47,8 +47,8 @@ public:
   {
     double a_lat_max = 19.62;
     double a_front_max = 19.62;
-    double a_max_brake = 19.62;
-    double max_power = 100e3;
+    double a_brake_max = 19.62;
+    double power_max = 100e3;
     double v_max = 33.3;
     double mass = 270;
   };
@@ -59,8 +59,6 @@ private:
   Config config_;
   VehicleModel vehicle_model_;
 
-  std::vector<Point> inner_cones_;
-  std::vector<Point> outer_cones_;
   std::vector<std::vector<double>> base_;
   std::vector<double> alphas_;
   std::vector<double> v_prof_;
