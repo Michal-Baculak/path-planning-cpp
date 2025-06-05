@@ -311,7 +311,7 @@ namespace global_planning
   {
     double output = 0;
     for (auto val : vec)
-      if (!isnan(val))
+      if (!std::isnan(val))
         output += val;
     return output;
   }
@@ -415,7 +415,7 @@ namespace global_planning
     auto k2_prof = GeometricTrajectoryOptimizer::curvature2Profile(base, x);
     double output = 0;
     for (auto k2 : k2_prof)
-      if (!isnan(k2))
+      if (!std::isnan(k2))
         output += k2;
     return output;
   }
@@ -427,7 +427,7 @@ namespace global_planning
     grad = GeometricTrajectoryOptimizer::gradK2(base, x);
     double output = 0;
     for (auto k2 : k2_prof)
-      if (!isnan(k2))
+      if (!std::isnan(k2))
         output += k2;
     return output;
   }
@@ -438,7 +438,7 @@ namespace global_planning
     auto l2_prof = GeometricTrajectoryOptimizer::distance2Profile(base, x);
     double output = 0;
     for (auto l2 : l2_prof)
-      if (!isnan(l2))
+      if (!std::isnan(l2))
         output += l2;
     return output;
   }
@@ -450,7 +450,7 @@ namespace global_planning
     grad = GeometricTrajectoryOptimizer::gradL2(base, x);
     double output = 0;
     for (auto l2 : l2_prof)
-      if (!isnan(l2))
+      if (!std::isnan(l2))
         output += l2;
     return output;
   }
@@ -461,7 +461,7 @@ namespace global_planning
     auto l_prof = GeometricTrajectoryOptimizer::distanceProfile(base, x);
     double output = 0;
     for (auto l : l_prof)
-      if (!isnan(l))
+      if (!std::isnan(l))
         output += l;
     return output;
   }
@@ -473,7 +473,7 @@ namespace global_planning
     grad = GeometricTrajectoryOptimizer::gradL(base, x);
     double output = 0;
     for (auto l : l_prof)
-      if (!isnan(l))
+      if (!std::isnan(l))
         output += l;
     return output;
   }

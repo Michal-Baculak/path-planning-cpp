@@ -3,7 +3,6 @@
 #include <fstream>
 #include <cmath>
 #include <limits>
-#include <Python.h>
 #include <nlopt.hpp>
 #include <bits/stdc++.h>
 #include <stdexcept>
